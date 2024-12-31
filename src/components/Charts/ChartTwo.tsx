@@ -1,6 +1,7 @@
 import { ApexOptions } from 'apexcharts';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import ReactApexChart from 'react-apexcharts';
+import axiosInstance from '../../utils/axiosInstance';
 
 const options: ApexOptions = {
   colors: ['#3C50E0', '#80CAEE'],
@@ -81,25 +82,47 @@ const ChartTwo: React.FC = () => {
         data: [13, 23, 20, 8, 13, 27, 15],
       },
       {
-        name: 'Vedio Call Request',
+        name: 'Video Call Request',
         data: [2, 28, 18, 18, 15, 27, 10],
       },
     ],
   });
-  
-  const handleReset = () => {
-    setState((prevState) => ({
-      ...prevState,
-    }));
-  };
-  handleReset;  
+
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [response] = await Promise.all([
+          axiosInstance.get<any>('/admin/callchats/counts'),
+        ]);
+
+        setState({
+          series: [
+            {
+              "name": 'Chat Request', "data": response.data.chatCount,
+            },
+            {
+              "name": 'Video Call Request', "data": response.data.videoCallsCount,
+            },
+            {
+              "name": 'Call Request', "data": response.data.audioCallsCount,
+            }
+          ]
+        })
+      } catch (error: any) {
+        console.error('Error fetching dashboard counts:', error.response?.data || error.message);
+      }
+    };
+
+    fetchData();
+  }, []); // Runs once on component mount  
 
   return (
     <div className="col-span-12 rounded-sm border border-stroke bg-white p-7.5 shadow-default dark:border-strokedark dark:bg-boxdark xl:col-span-4">
       <div className="mb-4 justify-between gap-4 sm:flex">
         <div>
           <h4 className="text-xl font-semibold text-black dark:text-white">
-          Total Request 
+            Total Request
           </h4>
         </div>
         <div>
