@@ -1,68 +1,66 @@
-import Breadcrumb from "../../components/Breadcrumbs/Breadcrumb"
-import UserOne from "../../images/user/user-01.png"
-import UserTwo from "../../images/user/user-02.png"
-import UserThree from "../../images/user/user-03.png"
-import UserFour from "../../images/user/user-04.png"
+import { useEffect, useState } from "react";
+import Breadcrumb from "../../components/Breadcrumbs/Breadcrumb";
+import axiosInstance from "../../utils/axiosInstance";
 
 const CallHistory = () => {
+  const [callHistory, setCallHistory] = useState([]);
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [showModal, setShowModal] = useState(false); // State to control modal visibility
+  const [currentFile, setCurrentFile] = useState(""); // Store the current file URL to be played in the modal
 
-    const chatDetails = [
-        {
-          astrologerImage: UserOne,
-          astrologerName: "Astrologer A",
-          userImage: UserTwo,
-          userName: "User A",
-          chatDuration: "30 mins",
-          startedTime: "10:00:00",
-          endedTime: "10:30:00",
-          chatroomId: "CR123456",
-          amount: 500,
-        },
-        {
-          astrologerImage: UserThree,
-          astrologerName: "Astrologer B",
-          userImage: UserOne,
-          userName: "User B",
-          chatDuration: "45 mins",
-          startedTime: "11:00:00",
-          endedTime: "11:45:00",
-          chatroomId: "CR123457",
-          amount: 750,
-        },
-        {
-          userImage: UserTwo,
-          astrologerName: "Astrologer C",
-          astrologerImage: UserThree,
-          userName: "User C",
-          chatDuration: "20 mins",
-          startedTime: "12:00:00",
-          endedTime: "12:20:00",
-          chatroomId: "CR123458",
-          amount: 300,
-        },
-        {
-            userImage: UserFour,
-            astrologerName: "Astrologer D",
-            astrologerImage: UserOne,
-            userName: "User D",
-            chatDuration: "20 mins",
-            startedTime: "12:00:00",
-            endedTime: "12:20:00",
-            chatroomId: "CR123458",
-            amount: 300,
-          },
-      ];
+  useEffect(() => {
+    const today = new Date();
+    const lastWeek = new Date();
+    lastWeek.setDate(today.getDate() - 7);
 
-      
+    const todayFormatted = today.toISOString().split("T")[0];
+    const lastWeekFormatted = lastWeek.toISOString().split("T")[0];
+
+    setFromDate(lastWeekFormatted);
+    setToDate(todayFormatted);
+  }, []);
+
+  useEffect(() => {
+    handleSubmit();
+  }, [fromDate, toDate]);
+
+  const handleSubmit = async () => {
+    try {
+      const response = await axiosInstance.post("/admin/get/call/history", {
+        fromDate,
+        toDate,
+      });
+      setCallHistory(response.data.data);
+    } catch (error) {
+      // console.error("Error fetching call history:", error.response?.data || error.message);
+    }
+  };
+
+  const formatDuration = (durationInSeconds: number) => {
+    const hours = Math.floor(durationInSeconds / 3600);
+    const minutes = Math.floor((durationInSeconds % 3600) / 60);
+    const seconds = durationInSeconds % 60;
+    return `${hours} hr ${minutes} min ${seconds} sec`;
+  };
+
+  const openModal = (fileName) => {
+    const fileUrl = `https://astrobandhan.s3.ap-south-1.amazonaws.com/${fileName}`;
+    setCurrentFile(fileUrl);
+    setShowModal(true); // Open the modal
+  };
+
+  const closeModal = () => {
+    setShowModal(false); // Close the modal
+    setCurrentFile(""); // Clear the file
+  };
+
   return (
     <>
       <Breadcrumb pageName="Call History" />
-
       <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
-      <div className="py-6 px-4 md:px-6 xl:px-7.5 flex justify-between items-center">
-          {/* Right Section: Date Fields */}
+        <div className="py-6 px-4 md:px-6 xl:px-7.5 flex justify-between items-center">
           <div className="flex items-center gap-4">
-            {/* From Date Field */}
             <div className="flex gap-3 items-center justify-center">
               <label htmlFor="fromDate" className="text-md font-medium text-gray-600 dark:text-gray-300">
                 From
@@ -70,118 +68,116 @@ const CallHistory = () => {
               <input
                 type="date"
                 id="fromDate"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
                 className="w-full bg-transparent px-4 py-2 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 dark:text-white dark:border-gray-700 dark:focus:ring-blue-300"
               />
             </div>
-  
-            {/* To Date Field */}
+
             <div className="flex gap-3 items-center justify-center">
               <label htmlFor="toDate" className="text-md font-medium text-gray-600 dark:text-gray-300">
-                To 
+                To
               </label>
               <input
                 type="date"
                 id="toDate"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
                 className="w-full bg-transparent px-4 py-2 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 dark:text-white dark:border-gray-700 dark:focus:ring-blue-300"
               />
             </div>
           </div>
-        </div>
-      <div className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-7 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5">
-        <div className="flex items-center px-2 col-span-1 sm:col-span-1">
-          <p className="font-medium text-center">Astrologer</p>
-        </div>
-        <div className="flex items-center justify-center col-span-1">
-        <p className="font-medium text-center">User</p>
-        </div>
-        <div className="flex items-center justify-center col-span-1">
-          <p className="font-medium text-center">Chat Duration</p>
-        </div>
-        {/* <div className="flex items-center justify-center col-span-2 sm:col-span-2">
-          <p className="font-medium text-center">Email</p>
-        </div> */}
-       
-        <div className="flex items-center justify-center col-span-1">
-          <p className="font-medium text-center">Started Time</p>
-        </div>
-        <div className="flex items-center justify-center col-span-1 sm:col-span-1">
-          <p className="font-medium text-center">Ended Time</p>
-        </div>
-        <div className="flex items-center justify-center col-span-1">
-          <p className="font-medium text-center">Total Amount</p>
-        </div>
-        <div className="flex items-center justify-center col-span-1">
-          <p className="font-medium text-center">Action</p>
-        </div>
-      </div>
-    
-      {/* Table Body */}
-      {chatDetails.map((user, key) => (
-       <div
-       className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-7 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5"
-       key={key}
-     >
-       {/* Astrologer Details */}
-       <div className="flex items-center col-span-1 sm:col-span-1">
-         <div className="flex gap-4 justify-center items-center">
-           {/* <img
-             src={user.astrologerImage}
-             alt="Astrologer Profile"
-             className="h-10 w-10 rounded-full"
-           /> */}
-           <p className="text-sm text-black dark:text-white">
-             {user.astrologerName}
-           </p>
-         </div>
-       </div>
-       
-       {/* User Name */}
-       <div className="flex items-center justify-center col-span-1 sm:col-span-1">
-         <div className="flex gap-4 justify-center items-center ">
-           {/* <img
-             src={user.userImage}
-             alt="Astrologer Profile"
-             className="h-10 w-10 rounded-full"
-           /> */}
-           <p className="text-sm text-black dark:text-white">
-             {user.userName}
-           </p>
-         </div>
-       </div>
 
-       
-       {/* Chat Duration */}
-       <div className="flex items-center justify-center col-span-1 sm:col-span-1">
-         <p className="text-sm text-black dark:text-white">{user.chatDuration}</p>
-       </div>
-       
-       {/* Reason for Chat */}
-       <div className="flex items-center justify-center col-span-1 sm:col-span-1">
-         <p className="text-sm text-black dark:text-white">{user.startedTime}</p>
-       </div>
-       
-       <div className="flex items-center justify-center col-span-1 sm:col-span-1">
-         <p className="text-sm text-black dark:text-white">{user.endedTime}</p>
-       </div>
+          <button
+            onClick={handleSubmit}
+            className="px-6 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 ml-4"
+          >
+            Fetch Call History
+          </button>
+        </div>
 
-       {/* <div className="flex items-center justify-center col-span-1 sm:col-span-1">
-         <p className="text-sm text-black dark:text-white">{user.chatroomId}</p>
-       </div> */}
-
-       <div className="flex items-center justify-center col-span-1 sm:col-span-1">
-         <p className="text-sm text-black dark:text-white">{user.amount}</p>
-       </div>
-
-       <div className="flex items-center justify-center col-span-1">
-  <button className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Listen</button>
-   </div>
-
+        <div className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-7 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5">
+          <div className="flex items-center px-2 col-span-1 sm:col-span-1">
+            <p className="font-medium text-center">Astrologer</p>
           </div>
-      ))}
-    </div>
-    
-    </>
-  )
-}
+          <div className="flex items-center justify-center col-span-1">
+            <p className="font-medium text-center">User</p>
+          </div>
+          <div className="flex items-center justify-center col-span-1">
+            <p className="font-medium text-center">Call Duration</p>
+          </div>
+          <div className="flex items-center justify-center col-span-1">
+            <p className="font-medium text-center">Started Time</p>
+          </div>
+          <div className="flex items-center justify-center col-span-1 sm:col-span-1">
+            <p className="font-medium text-center">Ended Time</p>
+          </div>
+          <div className="flex items-center justify-center col-span-1">
+            <p className="font-medium text-center">Total Amount</p>
+          </div>
+          <div className="flex items-center justify-center col-span-1">
+            <p className="font-medium text-center">Action</p>
+          </div>
+        </div>
 
-export default CallHistory
+        {callHistory.length > 0 && callHistory.map((user, key) => (
+          <div
+            className="grid grid-cols-2 sm:grid-cols-5 md:grid-cols-7 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5"
+            key={key}
+          >
+            <div className="flex items-center col-span-1 sm:col-span-1">
+              <p className="text-sm text-black dark:text-white">{user.astrologerDetails.name}</p>
+            </div>
+            <div className="flex items-center justify-center col-span-1 sm:col-span-1">
+              <p className="text-sm text-black dark:text-white">{user.userDetails.name}</p>
+            </div>
+            <div className="flex items-center justify-center col-span-1 sm:col-span-1">
+              <p className="text-sm text-black dark:text-white">{formatDuration(user.duration)}</p>
+            </div>
+            <div className="flex items-center justify-center col-span-1 sm:col-span-1">
+              <p className="text-sm text-black dark:text-white">{user.startedAt}</p>
+            </div>
+            <div className="flex items-center justify-center col-span-1 sm:col-span-1">
+              <p className="text-sm text-black dark:text-white">{user.endedAt}</p>
+            </div>
+            <div className="flex items-center justify-center col-span-1 sm:col-span-1">
+              <p className="text-sm text-black dark:text-white">{user.totalAmount}</p>
+            </div>
+            <div className="flex items-center justify-center col-span-1">
+              <button
+                onClick={() => openModal(user.recordingData.serverResponse.fileList.fileName)}
+                className="px-3 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              >
+                Listen
+              </button>
+            </div>
+          </div>
+        ))}
+
+        {callHistory.length === 0 && <h1 className="w-full text-center">No Data Found</h1>}
+      </div>
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-50">
+          <div className="bg-white p-4 rounded-md relative">
+            <button
+              onClick={closeModal}
+              className="absolute top-2 right-1 bg-red-500 rounded-full py-0 px-2  text-white rounded-full hover:bg-red-600"
+            >
+              X
+            </button>
+            <div className="w-[300px] h-[450px] overflow-hidden px-4">
+              <video controls className="w-full h-full object-cover">
+                <source src={currentFile} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default CallHistory;

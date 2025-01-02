@@ -119,8 +119,8 @@ const options: ApexOptions = {
         fontSize: '0px',
       },
     },
-    min: 100,
-    max: 5000,
+    min: 25,
+    max: 50000,
   },
 };
 

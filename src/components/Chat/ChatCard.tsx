@@ -86,7 +86,7 @@ const ChatCard = () => {
     fetchData();
   }, []); // Runs once on component mount
 
-  const handleVerifyClick = (chat) => {
+  const handleVerifyClick = (chat:any) => {
     setModalData(chat);
     setModalVisible(true);
   };
@@ -99,7 +99,7 @@ const ChatCard = () => {
   return (
     <div className="col-span-12 rounded-sm border border-stroke bg-white py-6 shadow-default dark:border-strokedark dark:bg-boxdark xl:col-span-4">
       <h4 className="mb-6 px-7.5 text-xl font-semibold text-black dark:text-white">
-        Unverified Astrologers
+        Pending Astrologers Request
       </h4>
 
       {/* Scrollable container */}

@@ -1,10 +1,36 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import ClickOutside from '../ClickOutside';
 import UserOne from '../../images/user/user-01.png';
+import axiosInstance from '../../utils/axiosInstance';
 
 const DropdownUser = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [adminProfile, setAdminProfile] = useState([]);
+
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axiosInstance.post<any>('/admin/get/adminprofile');
+        console.log(response.data.admin);
+
+        // Add an avatar field to the admin object
+        const processedData = {
+          ...response.data.admin,
+          avatar: UserOne,
+        };
+
+        // Update state with the processed data
+        setAdminProfile((prev) => ({ ...prev, ...processedData }));
+      } catch (error: any) {
+        console.error('Error fetching admin profile:', error.response?.data || error.message);
+      }
+    };
+
+    fetchData();
+  }, []); // Runs once on component mount
+
 
   return (
     <ClickOutside onClick={() => setDropdownOpen(false)} className="relative">
@@ -15,7 +41,7 @@ const DropdownUser = () => {
       >
         <span className="hidden text-right lg:block">
           <span className="block text-sm font-medium text-black dark:text-white">
-            Thomas Anree
+            {adminProfile.name}
           </span>
           <span className="block text-xs">Admin</span>
         </span>

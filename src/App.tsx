@@ -37,7 +37,7 @@ function App() {
   const [loading, setLoading] = useState<boolean>(true);
   const { pathname } = useLocation();
 
-  
+
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -70,7 +70,7 @@ function App() {
             </>
           }
         />
-        {/* <Route
+        <Route
           path="/profile"
           element={
             <>
@@ -78,22 +78,22 @@ function App() {
               <Profile />
             </>
           }
-        /> */}
-         <Route
+        />
+        <Route
           path="/customers"
           element={
             <>
               <PageTitle title="Customers | Astro Bandhan" />
-              <Customer/>
+              <Customer />
             </>
           }
         />
-         <Route
+        <Route
           path="/astrologers/manageAstrologers"
           element={
             <>
               <PageTitle title="Manage Astrologers | Astro Bandhan" />
-              <ManageAstrologer/>
+              <ManageAstrologer />
             </>
           }
         />
@@ -102,16 +102,16 @@ function App() {
           element={
             <>
               <PageTitle title=" Astrologers Pending Request | Astro Bandhan" />
-             <PendingRequest/>
+              <PendingRequest />
             </>
           }
         />
-         <Route
+        <Route
           path="/astrologers/manageaiAstrologers"
           element={
             <>
               <PageTitle title=" Astrologers Pending Request | Astro Bandhan" />
-             <ManageAIAstrologer/>
+              <ManageAIAstrologer />
             </>
           }
         />
@@ -120,17 +120,17 @@ function App() {
           element={
             <>
               <PageTitle title=" Astrologers Pending Request | Astro Bandhan" />
-            <BannerManagement/>
+              <BannerManagement />
             </>
           }
         />
 
-         <Route
+        <Route
           path="/sendNotifications"
           element={
             <>
               <PageTitle title=" Astrologers Send Notifications | Astro Bandhan" />
-           <SendNotifications/>
+              <SendNotifications />
             </>
           }
         />
@@ -140,7 +140,7 @@ function App() {
           element={
             <>
               <PageTitle title=" Astrologers Send Notifications | Astro Bandhan" />
-           <CreditHistory/>
+              <CreditHistory />
             </>
           }
         />
@@ -149,25 +149,25 @@ function App() {
           element={
             <>
               <PageTitle title=" Astrologers Send Notifications | Astro Bandhan" />
-           <DebitHistory/>
+              <DebitHistory />
             </>
           }
         />
-         <Route
+        <Route
           path="/wallet/pending"
           element={
             <>
               <PageTitle title=" Astrologers Send Notifications | Astro Bandhan" />
-           <Pending/>
+              <Pending />
             </>
           }
         />
-         <Route
+        <Route
           path="/history/chat/ai_astrologer"
           element={
             <>
               <PageTitle title=" Astrologers Send Notifications | Astro Bandhan" />
-            <AiAstrologerHistory/>
+              <AiAstrologerHistory />
             </>
           }
         />
@@ -176,7 +176,7 @@ function App() {
           element={
             <>
               <PageTitle title=" Astrologers Send Notifications | Astro Bandhan" />
-            <AstrologerHistory/>
+              <AstrologerHistory />
             </>
           }
         />
@@ -185,16 +185,16 @@ function App() {
           element={
             <>
               <PageTitle title=" Astrologers Send Notifications | Astro Bandhan" />
-           <CallHistory/>
+              <CallHistory />
             </>
           }
         />
-         <Route
+        <Route
           path="/history/video_call"
           element={
             <>
               <PageTitle title=" Astrologers Send Notifications | Astro Bandhan" />
-            <VideoCallHistory/>
+              <VideoCallHistory />
             </>
           }
         />
@@ -203,7 +203,7 @@ function App() {
           element={
             <>
               <PageTitle title=" Astrologers Send Notifications | Astro Bandhan" />
-            <Products/>
+              <Products />
             </>
           }
         />
@@ -212,7 +212,7 @@ function App() {
           element={
             <>
               <PageTitle title=" Astrologers Send Notifications | Astro Bandhan" />
-            <Categories/>
+              <Categories />
             </>
           }
         />
@@ -221,11 +221,11 @@ function App() {
           element={
             <>
               <PageTitle title=" Astrologers Send Notifications | Astro Bandhan" />
-            <Orders/>
+              <Orders />
             </>
           }
         />
-        
+
         {/* <Route
           path="/forms/form-elements"
           element={
@@ -254,7 +254,7 @@ function App() {
           }
         />
         <Route
-          path="/settings"
+          path="/profile"
           element={
             <>
               <PageTitle title="Settings | Astro Bandhan" />
