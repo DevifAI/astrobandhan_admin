@@ -13,7 +13,7 @@ const DropdownUser = () => {
     const fetchData = async () => {
       try {
         const response = await axiosInstance.post<any>('/admin/get/adminprofile');
-        console.log(response.data.admin);
+        // console.log(response.data.admin);
 
         // Add an avatar field to the admin object
         const processedData = {

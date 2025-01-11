@@ -68,7 +68,7 @@ const ChatCard = () => {
         const [response] = await Promise.all([
           axiosInstance.get<any>('/admin/pending-astrologer-requests'),
         ]);
-        console.log(response.data.data.requests);
+        // console.log(response.data.data.requests);
 
         // Map the requests and add an avatar field based on gender
         const processedData = response.data.data.requests.map((request: any) => ({

@@ -149,9 +149,9 @@ const ChartOne: React.FC = () => {
         const [response] = await Promise.all([
           axiosInstance.get<any>('/admin/reveneuvspayout'),
         ]);
-        console.log({ response })
-        console.log(response.data.data.walletRecharges)
-        console.log(response.data.walletRecharges)
+        // console.log({ response })
+        // console.log(response.data.data.walletRecharges)
+        // console.log(response.data.walletRecharges)
         setState({
           series:[
             {
@@ -170,7 +170,7 @@ const ChartOne: React.FC = () => {
     fetchData();
   }, []); // Runs once on component mount
 
-  console.log({ state })
+  // console.log({ state })
 
 
   const handleReset = () => {

@@ -1,99 +1,100 @@
-import React, { useState, ChangeEvent } from "react";
+import React, { useState, ChangeEvent } from 'react';
 import { Product } from '../../types/Products';
 
 interface ProductModalProps {
-  product?: Product | null;
+  product: Product | null;
   onClose: () => void;
   onSave: (product: Product) => void;
-  categories: string[];
+  categories: { _id: string; category_name: string }[];
 }
 
-const ProductModal: React.FC<ProductModalProps> = ({ 
-  product, 
-  onClose, 
+const ProductModal: React.FC<ProductModalProps> = ({
+  product,
+  onClose,
   onSave,
-  categories
+  categories,
 }) => {
   const [formData, setFormData] = useState<Product>(
     product || {
-      id: 0,
-      name: "",
-      description: "",
-      category: categories[0] || "",
-      price: 0,
-      discountPrice: 0,
-      stockQuantity: 0,
-      image: "",
-    }
+      _id: '',
+      productName: '',
+      image: '',
+      productDescription: '',
+      category: {
+        _id: '',
+        category_name: '',
+        createdAt: '',
+        updatedAt: '',
+        __v: 0,
+      },
+      rating: 0,
+      brand: '',
+      weight: '',
+      material: '',
+      originalPrice: 0,
+      displayPrice: 0,
+      in_stock: false,
+      isTrending: false,
+      createdAt: '',
+      updatedAt: '',
+      __v: 0,
+      total_stock: 0,
+      contains: [],
+    },
   );
 
   const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
-    setFormData((prev: any) => ({
-      ...prev,
-      [name]: name === "price" || name === "discountPrice" || name === "stockQuantity"
-        ? value === "" ? 0 : Number(value)
-        : value,
-    }));
+    console.log(value);
+    if (name === 'originalPrice') {
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]:
+          name === 'originalPrice' ? Number((value.toString()) + (prevData.originalPrice).toString()) : 0,
+      }));
+    }
+    else if (name === 'displayPrice') {
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]:
+          name === 'displayPrice' ? Number(value) + prevData.displayPrice : 0,
+      }));
+    }
+    else if (name === 'total_stock') {
+      setFormData((prevData) => ({
+        ...prevData,
+        [name]:
+          name === 'total_stock' ? Number(value) + prevData.total_stock : 0,
+      }));
+    }
   };
 
-  const handleSubmit = () => {
-  if (!formData.name || !formData.description || !formData.category) {
-      alert('Please fill in all required fields.');
-      return;
-    }  
-    
-    const submissionData = {
-      ...formData,
-      price: formData.price ?? 0,
-      discountPrice: formData.discountPrice ?? 0,
-      stockQuantity: formData.stockQuantity ?? 0,
-    };
-    console.log('Form Data on Submit:', submissionData);
-    onSave(submissionData);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(formData);
   };
 
   const [dragActive, setDragActive] = useState(false);
-  const [previewImage, setPreviewImage] = useState<string>(product?.image || '');
+  const [previewImage, setPreviewImage] = useState<string>(
+    product?.image || '',
+  );
 
-  // const handleChange = (
-  //   e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  // ) => {
-  //   const { name, value } = e.target;
-  //   setFormData((prev) => ({
-  //     ...prev,
-  //     [name]: name === "price" || name === "discountPrice" || name === "stockQuantity" 
-  //       ? value === "" ? null : Number(value)
-  //       : value,
-  //   }));
-  // };
-
-  // const handleSubmit = () => {
-  //   // Convert null values to 0 before submitting
-  //   const submissionData = {
-  //     ...formData,
-  //     price: formData.price ?? 0,
-  //     discountPrice: formData.discountPrice ?? 0,
-  //     stockQuantity: formData.stockQuantity ?? 0,
-  //   };
-  //   console.log('Form Data on Submit:', submissionData);
-  //   onSave(submissionData);
-  // };
-
-  const handleImageDrop = (e: React.DragEvent<HTMLDivElement> | React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageDrop = (
+    e: React.DragEvent<HTMLDivElement> | React.ChangeEvent<HTMLInputElement>,
+  ) => {
     e.preventDefault();
     setDragActive(false);
-    
+
     let file: File | null = null;
-    
+
     if ('dataTransfer' in e) {
       file = e.dataTransfer?.files[0];
     } else if ('target' in e && e.target.files) {
       file = e.target.files[0];
     }
-    
+
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -107,9 +108,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
   const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    if (e.type === "dragenter" || e.type === "dragover") {
+    if (e.type === 'dragenter' || e.type === 'dragover') {
       setDragActive(true);
-    } else if (e.type === "dragleave") {
+    } else if (e.type === 'dragleave') {
       setDragActive(false);
     }
   };
@@ -138,7 +139,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
           <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 px-6 py-4 border-b rounded-t-lg">
             <div className="flex justify-between items-center">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {product ? "Edit Product" : "Add New Product"}
+                {product ? 'Edit Product' : 'Add New Product'}
               </h3>
               <button
                 onClick={onClose}
@@ -156,7 +157,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <div className="space-y-4 md:col-span-2">
                 <div
                   className={`border-2 border-dashed rounded-lg p-4 text-center ${
-                    dragActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300'
+                    dragActive
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                      : 'border-gray-300'
                   }`}
                   onDragEnter={handleDrag}
                   onDragLeave={handleDrag}
@@ -197,7 +200,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
                         </label>
                         <p>or drag and drop</p>
                       </div>
-                      <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+                      <p className="text-xs text-gray-500">
+                        PNG, JPG, GIF up to 10MB
+                      </p>
                     </div>
                   )}
                 </div>
@@ -208,14 +213,14 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 <input
                   type="text"
                   name="name"
-                  value={formData.name}
+                  value={formData.productName}
                   onChange={handleChange}
                   placeholder="Product Name"
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                 />
                 <textarea
                   name="description"
-                  value={formData.description}
+                  value={formData.productDescription}
                   onChange={handleChange}
                   placeholder="Description"
                   rows={3}
@@ -223,14 +228,16 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 />
                 <select
                   name="category"
-                  value={formData.category}
+                  value={formData.category.category_name}
                   onChange={handleChange}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white bg-white dark:bg-gray-800"
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white bg-white"
                 >
-                  <option value="" disabled>Select Category</option>
+                  <option value="" disabled>
+                    Select Category
+                  </option>
                   {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
+                    <option key={category._id} value={category.category_name}>
+                      {category.category_name}
                     </option>
                   ))}
                 </select>
@@ -240,17 +247,17 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 <input
                   type="number"
                   name="price"
-                  value={formData.price ?? ''}
+                  value={formData.displayPrice > 0 && ''}
                   onChange={handleChange}
                   placeholder="Price"
-                  min="0"
-                  step="0.01"
+                  // min="0"
+                  // step="0.01"
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
                 />
                 <input
                   type="number"
                   name="discountPrice"
-                  value={formData.discountPrice ?? ''}
+                  value={formData.originalPrice ?? ''}
                   onChange={handleChange}
                   placeholder="Discounted Price"
                   min="0"
@@ -260,7 +267,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 <input
                   type="number"
                   name="stockQuantity"
-                  value={formData.stockQuantity ?? ''}
+                  value={formData.total_stock ?? ''}
                   onChange={handleChange}
                   placeholder="Stock Quantity"
                   min="0"
@@ -283,7 +290,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 onClick={handleSubmit}
                 className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                {product ? "Update Product" : "Add Product"}
+                {product ? 'Update Product' : 'Add Product'}
               </button>
             </div>
           </div>

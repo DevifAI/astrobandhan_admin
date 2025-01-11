@@ -53,7 +53,7 @@ const ManageAstrologer = () => {
 
   const handleAddAstrologer = (data: AstrologerFormData) => {
     // Handle the form submission here
-    console.log('New Astrologer Data:', data);
+    // console.log('New Astrologer Data:', data);
     // Add your logic to save the data
   };
 

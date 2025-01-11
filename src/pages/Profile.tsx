@@ -20,7 +20,7 @@ const Profile = () => {
         const total_users_data = await axiosInstance.get<any>('/admin/totalusers');
         const total_astrologers_data = await axiosInstance.get<any>('/admin/totalastrologers');
         const total_credit = await axiosInstance.post<any>('/admin/get/total/credit');
-        console.log(response.data.admin);
+        // console.log(response.data.admin);
 
         // Add an avatar field to the admin object
         const processedData = {
