@@ -1,9 +1,11 @@
+import { useState } from "react"
 import Breadcrumb from "../components/Breadcrumbs/Breadcrumb"
 import UserOne from "../images/user/user-01.png"
 import UserTwo from "../images/user/user-02.png"
 import UserThree from "../images/user/user-03.png"
 import UserFour from "../images/user/user-04.png"
 import { CustomerType } from "../types/customer"
+import RechargeWalletModal from "../modals/RechargeWallet"
 // import { Product } from "../types/product"
 
 
@@ -43,6 +45,8 @@ const userData : CustomerType[] =[
 ];
 
 const Customer = () => {
+  const [isRechargeModalOpen, setIsRechargeModalOpen] = useState(false);
+
   return (
     <>
       <Breadcrumb pageName="Customers" />
@@ -87,6 +91,7 @@ const Customer = () => {
         <div className="flex items-center justify-center gap-2">
            <button
                className="rounded-md bg-blue-300 px-2 py-1 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 dark:bg-blue-400 dark:hover:bg-blue-500 dark:focus:ring-blue-300"
+               onClick={() => setIsRechargeModalOpen(true)}
                >
                 Recharge Wallet
             </button>
@@ -210,6 +215,14 @@ const Customer = () => {
       </div>
     </div>
   ))}
+
+
+<RechargeWalletModal
+  isOpen={isRechargeModalOpen} 
+  onClose={() => setIsRechargeModalOpen(false)} 
+/>
+
+
 </div>
 
 

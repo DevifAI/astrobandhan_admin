@@ -97,13 +97,18 @@ const ChatCard = () => {
   };
 
   return (
-    <div className="col-span-12 rounded-sm border border-stroke bg-white py-6 shadow-default dark:border-strokedark dark:bg-boxdark xl:col-span-4">
+    <div className="col-span-12 rounded-sm border border-stroke bg-white pt-6 shadow-default dark:border-strokedark dark:bg-boxdark xl:col-span-4">
       <h4 className="mb-6 px-7.5 text-xl font-semibold text-black dark:text-white">
         Pending Astrologers Request
       </h4>
 
       {/* Scrollable container */}
-      <div className="h-100 border-2 border-red-500 overflow-y-auto">
+      <div className="h-100 overflow-y-auto scrollbar-hide"
+      style={{
+        scrollbarWidth: 'none',      // Firefox
+        msOverflowStyle: 'none',     // IE and Edge
+      }}
+      >
         {chatData.map((chat, key) => (
           <Link
             to="/"
@@ -184,3 +189,5 @@ const ChatCard = () => {
 };
 
 export default ChatCard;
+
+

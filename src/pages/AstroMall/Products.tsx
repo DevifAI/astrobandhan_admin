@@ -7,6 +7,15 @@ import UserOne from '../../images/user/user-01.png';
 import axiosInstance from '../../utils/axiosInstance.ts';
 import axios from 'axios';
 
+const categories = [
+  { value: "", label: "Search by Category" },
+  { value: "electronics", label: "Electronics" },
+  { value: "books", label: "Books" },
+  { value: "fashion", label: "Fashion" },
+  { value: "home", label: "Home & Kitchen" },
+  { value: "sports", label: "Sports & Outdoors" },
+];
+
 const Products: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [showModal, setShowModal] = useState<boolean>(false);
@@ -15,6 +24,7 @@ const Products: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>(''); // Add search query state
 
+  console.log(products)
   const handleAddProduct = async (newProduct: Product) => {
     try {
       const response = await addProduct(newProduct);
@@ -83,48 +93,55 @@ const Products: React.FC = () => {
       <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
         {/* Header Section */}
         <div className="py-6 px-4 md:px-6 xl:px-7.5 flex flex-col md:flex-row justify-between items-center">
-          <div>
-            <form action="#" method="POST">
-              <div className="relative">
-                <button className="absolute left-0 top-1/2 -translate-y-1/2">
-                  <svg
-                    className="fill-body hover:fill-primary dark:fill-bodydark dark:hover:fill-primary"
-                    width="20"
-                    height="20"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      clipRule="evenodd"
-                      d="M9.16666 3.33332C5.945 3.33332 3.33332 5.945 3.33332 9.16666C3.33332 12.3883 5.945 15 9.16666 15C12.3883 15 15 12.3883 15 9.16666C15 5.945 12.3883 3.33332 9.16666 3.33332ZM1.66666 9.16666C1.66666 5.02452 5.02452 1.66666 9.16666 1.66666C13.3088 1.66666 16.6667 5.02452 16.6667 9.16666C16.6667 13.3088 13.3088 16.6667 9.16666 16.6667C5.02452 16.6667 1.66666 13.3088 1.66666 9.16666Z"
-                      fill=""
-                    />
-                    <path
-                      fillRule="evenodd"
-                      clipRule="evenodd"
-                      d="M13.2857 13.2857C13.6112 12.9603 14.1388 12.9603 14.4642 13.2857L18.0892 16.9107C18.4147 17.2362 18.4147 17.7638 18.0892 18.0892C17.7638 18.4147 17.2362 18.4147 16.9107 18.0892L13.2857 14.4642C12.9603 14.1388 12.9603 13.6112 13.2857 13.2857Z"
-                      fill=""
-                    />
-                  </svg>
-                </button>
-              </div>
-            </form>
+          <div className='w-[60%]'>
+          <form action="#" method="POST">
+        <div className="flex gap-4">
+    {/* Search Input */}
+    <div className="relative w-full">
+      <button className="absolute left-0 top-1/2 -translate-y-1/2 pl-2">
+        <svg
+          className="fill-body hover:fill-primary dark:fill-bodydark dark:hover:fill-primary"
+          width="20"
+          height="20"
+          viewBox="0 0 20 20"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M9.16666 3.33332C5.945 3.33332 3.33332 5.945 3.33332 9.16666C3.33332 12.3883 5.945 15 9.16666 15C12.3883 15 15 12.3883 15 9.16666C15 5.945 12.3883 3.33332 9.16666 3.33332ZM1.66666 9.16666C1.66666 5.02452 5.02452 1.66666 9.16666 1.66666C13.3088 1.66666 16.6667 5.02452 16.6667 9.16666C16.6667 13.3088 13.3088 16.6667 9.16666 16.6667C5.02452 16.6667 1.66666 13.3088 1.66666 9.16666Z"
+          />
+          <path
+            fillRule="evenodd"
+            clipRule="evenodd"
+            d="M13.2857 13.2857C13.6112 12.9603 14.1388 12.9603 14.4642 13.2857L18.0892 16.9107C18.4147 17.2362 18.4147 17.7638 18.0892 18.0892C17.7638 18.4147 17.2362 18.4147 16.9107 18.0892L13.2857 14.4642C12.9603 14.1388 12.9603 13.6112 13.2857 13.2857Z"
+          />
+        </svg>
+      </button>
 
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Type to search..."
-              className="w-full bg-transparent pl-9 pr-4 text-black focus:outline-none dark:text-white xl:w-125"
-            />
-            <button
-              onClick={handleSearch}
-              className="ml-2 rounded-md bg-blue-300 px-2 py-1 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 dark:bg-blue-400 dark:hover:bg-blue-500 dark:focus:ring-blue-300"
-            >
-              Search
-            </button>
+      <input
+        type="text"
+        placeholder="Type to search..."
+        className="w-full bg-transparent pl-9 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:text-white dark:bg-dark dark:border-gray-600"
+      />
+    </div>
+
+    {/* Category Dropdown */}
+    <div className="w-[50%]">
+      <select
+        name="category"
+        className="w-full bg-transparent pl-3 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:text-white dark:bg-dark dark:border-gray-600"
+      >
+        {categories.map((category) => (
+          <option key={category.value} value={category.value} className='dark:text-black dark:bg-dark'>
+            {category.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  </div>
+</form>
           </div>
           <button
             className="rounded-md bg-blue-300 px-2 py-1 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 dark:bg-blue-400 dark:hover:bg-blue-500 dark:focus:ring-blue-300"
@@ -160,7 +177,7 @@ const Products: React.FC = () => {
                 <p className="font-medium text-center">Discounted Price</p>
               </div>
               <div className="flex items-center justify-center col-span-1 sm:col-span-1">
-                <p className="font-medium text-center">Stock Quantity</p>
+                <p className="font-medium text-center">Stock</p>
               </div>
               <div className="flex items-center justify-center col-span-1 space-x-3.5">
                 <p className="font-medium text-center">Actions</p>
@@ -206,9 +223,16 @@ const Products: React.FC = () => {
                   </p>
                 </div>
                 <div className="flex items-center justify-center col-span-1 sm:col-span-1">
-                  <p className="text-sm text-black dark:text-white">
-                    {product.total_stock}
-                  </p>
+                <p
+  className={`inline-flex rounded-full bg-opacity-10 py-1 px-3 text-sm font-medium ${
+    product.in_stock === true
+      ? 'bg-success text-success'
+      : 'bg-danger text-danger'
+  }`}
+>
+  {product.in_stock === true ? 'Available' : 'Not Available'}
+</p>
+
                 </div>
                 <div className="flex items-center justify-center space-x-2">
                   <button

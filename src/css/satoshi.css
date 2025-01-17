@@ -129,3 +129,17 @@
        font-style: italic;
 }
 
+
+.custom-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for Firefox */
+.custom-scroll {
+  scrollbar-width: none; /* Firefox */
+}
+
+/* Ensures the content is scrollable */
+.custom-scroll {
+  overflow-y: auto;
+}
