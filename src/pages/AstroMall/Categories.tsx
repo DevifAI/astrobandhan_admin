@@ -256,6 +256,7 @@ const Categories = () => {
     setIsModalOpen(false);
   };
 
+
   return (
     <>
       <Breadcrumb pageName="Categories" />
@@ -274,7 +275,7 @@ const Categories = () => {
                 className="w-full bg-transparent px-4 py-2 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 dark:text-white dark:border-gray-700 dark:focus:ring-blue-300"
               />
             </div>
-
+  
             <div className="flex gap-3 items-center justify-center">
               <label htmlFor="toDate" className="text-md font-medium text-gray-600 dark:text-gray-300">
                 To
@@ -288,7 +289,7 @@ const Categories = () => {
               />
             </div>
           </div>
-
+  
           <div className="flex items-center justify-center gap-2">
             <button
               className="rounded-md bg-blue-300 px-2 py-1 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 dark:bg-blue-400 dark:hover:bg-blue-500 dark:focus:ring-blue-300"
@@ -298,22 +299,24 @@ const Categories = () => {
             </button>
           </div>
         </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-6 md:grid-cols-8 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5">
-          <div className="flex items-center justify-center col-span-1 sm:col-span-2 md:col-span-2">
-            <p className="font-medium text-center text-md">Name</p>
+  
+        {/* Table Headers */}
+        <div className="grid grid-cols-8 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5">
+          <div className="flex items-center justify-center col-span-2">
+            <p className="font-medium">Image</p>
           </div>
-          <div className="flex items-center justify-center col-span-1 sm:col-span-2 md:col-span-2">
-            <p className="font-medium text-center">Category ID</p>
+          <div className="flex items-center justify-center col-span-2">
+            <p className="font-medium">Name</p>
           </div>
-          <div className="flex items-center justify-center col-span-1 sm:col-span-2 md:col-span-2">
-            <p className="font-medium text-center">Created At</p>
+          <div className="flex items-center justify-center col-span-2">
+            <p className="font-medium">No. of Items</p>
           </div>
-          <div className="flex items-center justify-center col-span-1 sm:col-span-2 md:col-span-2">
-            <p className="font-medium text-center">Actions</p>
+          <div className="flex items-center justify-center col-span-2">
+            <p className="font-medium">Actions</p>
           </div>
         </div>
-
+  
+        {/* Table Body */}
         {loading ? (
           <div className="text-center py-4">Loading...</div>
         ) : error ? (
@@ -321,32 +324,53 @@ const Categories = () => {
         ) : (
           categories.map((category) => (
             <div
-              className="grid grid-cols-2 sm:grid-cols-6 md:grid-cols-8 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5"
+              className="grid grid-cols-8 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5"
               key={category._id}
             >
-              <div className="flex items-center justify-center col-span-1 sm:col-span-2 md:col-span-2">
+              <div className="flex items-center justify-center col-span-2">
+                {category.image ? (
+                  <img
+                    src={category.image}
+                    alt={category.category_name}
+                    className="w-14 h-14 rounded-2xl object-cover"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      className="h-6 w-6 text-gray-400"
+                      viewBox="0 0 24 24" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      strokeWidth="2"
+                    >
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <path d="M21 15l-5-5L5 21" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex items-center justify-center col-span-2">
                 <p className="text-md text-black dark:text-white">
                   {category.category_name}
                 </p>
               </div>
-              <div className="flex items-center justify-center col-span-1 sm:col-span-2 md:col-span-2">
+              
+              <div className="flex items-center justify-center col-span-2">
                 <p className="text-md text-black dark:text-white">
-                  {category._id}
+                  {category.no_of_items}
                 </p>
               </div>
-              <div className="flex items-center justify-center col-span-1 sm:col-span-2 md:col-span-2">
-                <p className="text-md text-black dark:text-white">
-                  {new Date(category.createdAt).toLocaleDateString()}
-                </p>
-              </div>
-              <div className="flex items-center justify-center gap-4 col-span-1 sm:col-span-2 md:col-span-2">
+              
+              <div className="flex items-center justify-center gap-2 col-span-2">
                 <button
                   className="rounded-md bg-blue-300 px-3 py-1 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 dark:bg-blue-400 dark:hover:bg-blue-500 dark:focus:ring-blue-300"
                   onClick={() => handleOpenModal(category)}
                 >
                   Edit
                 </button>
-
                 <button
                   className="rounded-md bg-red-300 px-3 py-1 text-white font-medium hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 dark:bg-red-400 dark:hover:bg-red-500 dark:focus:ring-blue-300"
                   onClick={() => handleDeleteCategory(category._id)}
@@ -358,13 +382,13 @@ const Categories = () => {
           ))
         )}
       </div>
-
+  
       {isModalOpen && (
         <CategoryModal
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           category={selectedCategory}
-          onSubmit={selectedCategory ? handleUpdateCategory : handleAddCategory}
+          onHandleSubmit={selectedCategory ? handleUpdateCategory : handleAddCategory}
         />
       )}
     </>

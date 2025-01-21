@@ -115,6 +115,13 @@ const ProductModal: React.FC<ProductModalProps> = ({
     }
   };
 
+  const handleInStockChange = () => {
+    setFormData((prevData) => ({
+      ...prevData,
+      in_stock: !prevData.in_stock,
+    }));
+  };
+
   // Add styles to remove spinner buttons from number inputs
   const numberInputStyle = `
     /* Chrome, Safari, Edge, Opera */
@@ -131,172 +138,166 @@ const ProductModal: React.FC<ProductModalProps> = ({
   `;
 
   return (
-    <div className="fixed inset-0 z-50 flex md:items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto">
-      <style>{numberInputStyle}</style>
-      <div className="relative min-h-screen md:min-h-fit w-full md:max-w-2xl md:my-8 mx-auto p-4">
-        <div className="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl">
-          {/* Modal Header - Fixed at top */}
-          <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 px-6 py-4 border-b rounded-t-lg">
-            <div className="flex justify-between items-center">
-              <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {product ? 'Edit Product' : 'Add New Product'}
-              </h3>
-              <button
-                onClick={onClose}
-                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              >
-                <span className="text-xl font-medium">×</span>
-              </button>
-            </div>
-          </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto p-2 mt-16">
+    <div className="relative w-full max-w-4xl bg-white dark:bg-gray-900 rounded-lg shadow-xl">
+      {/* Modal Header */}
+      <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 px-8 py-6 border-b rounded-t-lg">
+        <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">
+          {product ? 'Edit Product' : 'Add New Product'}
+        </h3>
+      </div>
 
-          {/* Modal Body - Scrollable */}
-          <div className="px-6 py-4 space-y-6 max-h-[calc(100vh-10rem)] md:max-h-[calc(100vh-16rem)] overflow-y-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Image Upload Section */}
-              <div className="space-y-4 md:col-span-2">
-                <div
-                  className={`border-2 border-dashed rounded-lg p-4 text-center ${
-                    dragActive
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                      : 'border-gray-300'
-                  }`}
-                  onDragEnter={handleDrag}
-                  onDragLeave={handleDrag}
-                  onDragOver={handleDrag}
-                  onDrop={handleImageDrop}
+      {/* Modal Body */}
+      <div className="px-8 py-6 space-y-8 max-h-[calc(100vh-16rem)] overflow-y-auto">
+        {/* Image Upload Section */}
+        <div className="space-y-4">
+          <div
+            className={`border-2 border-dashed rounded-lg p-8 text-center ${
+              dragActive
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                : 'border-gray-300'
+            }`}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleImageDrop}
+          >
+            {previewImage ? (
+              <div className="relative">
+                <img
+                  src={previewImage}
+                  alt="Preview"
+                  className="max-h-64 mx-auto rounded-lg"
+                />
+                <button
+                  onClick={() => {
+                    setPreviewImage('');
+                    setFormData((prev) => ({ ...prev, image: '' }));
+                  }}
+                  className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full w-8 h-8 flex items-center justify-center"
                 >
-                  {previewImage ? (
-                    <div className="relative">
-                      <img
-                        src={previewImage}
-                        alt="Preview"
-                        className="max-h-48 mx-auto rounded-lg"
-                      />
-                      <button
-                        onClick={() => {
-                          setPreviewImage('');
-                          setFormData((prev: any) => ({ ...prev, image: '' }));
-                        }}
-                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full w-6 h-6 flex items-center justify-center"
-                      >
-                        <span className="text-sm">×</span>
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <div className="w-8 h-8 mx-auto text-gray-400 flex items-center justify-center">
-                        <span className="text-2xl">↑</span>
-                      </div>
-                      <div className="flex flex-wrap text-sm text-gray-600 dark:text-gray-400 justify-center gap-1">
-                        <label className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
-                          <span>Upload a file</span>
-                          <input
-                            type="file"
-                            className="sr-only"
-                            accept="image/*"
-                            onChange={handleImageDrop}
-                          />
-                        </label>
-                        <p>or drag and drop</p>
-                      </div>
-                      <p className="text-xs text-gray-500">
-                        PNG, JPG, GIF up to 10MB
-                      </p>
-                    </div>
-                  )}
+                  <span className="text-lg">×</span>
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="w-12 h-12 mx-auto text-gray-400 flex items-center justify-center">
+                  <span className="text-3xl">↑</span>
                 </div>
+                <div className="flex flex-wrap text-sm text-gray-600 dark:text-gray-400 justify-center gap-2">
+                  <label className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500">
+                    <span>Upload a file</span>
+                    <input
+                      type="file"
+                      className="sr-only"
+                      accept="image/*"
+                      onChange={handleImageDrop}
+                    />
+                  </label>
+                  <p>or drag and drop</p>
+                </div>
+                <p className="text-sm text-gray-500">PNG, JPG up to 5MB</p>
               </div>
+            )}
+          </div>
+        </div>
 
-              {/* Form Fields */}
-              <div className="space-y-4">
-                <input
-                  type="text"
-                  name="name"
-                  value={formData.productName}
-                  onChange={handleChange}
-                  placeholder="Product Name"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                />
-                <textarea
-                  name="description"
-                  value={formData.productDescription}
-                  onChange={handleChange}
-                  placeholder="Description"
-                  rows={3}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                />
-                <select
-                  name="category"
-                  value={formData.category.category_name}
-                  onChange={handleChange}
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white bg-white"
-                >
-                  <option value="" disabled>
-                    Select Category
-                  </option>
-                  {categories.map((category) => (
-                    <option key={category._id} value={category.category_name}>
-                      {category.category_name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-4">
-                <input
-                  type="number"
-                  name="price"
-                  value={formData.displayPrice > 0 && ''}
-                  onChange={handleChange}
-                  placeholder="Price"
-                  // min="0"
-                  // step="0.01"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                />
-                <input
-                  type="number"
-                  name="discountPrice"
-                  value={formData.originalPrice ?? ''}
-                  onChange={handleChange}
-                  placeholder="Discounted Price"
-                  min="0"
-                  step="0.01"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                />
-                <input
-                  type="number"
-                  name="stockQuantity"
-                  value={formData.total_stock ?? ''}
-                  onChange={handleChange}
-                  placeholder="Stock Quantity"
-                  min="0"
-                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                />
-              </div>
-            </div>
+        {/* Form Fields */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-6">
+            <input
+              type="text"
+              name="productName"
+              placeholder="Product Name"
+              onChange={handleChange}
+              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+            />
+            <textarea
+              name="productDescription"
+              placeholder="Description"
+              rows={4}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+            />
+            <select
+              name="category"
+              onChange={handleChange}
+              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white bg-white"
+            >
+              <option value="" disabled selected>
+                Select Category
+              </option>
+              {categories.map((category) => (
+                <option key={category._id} value={category.category_name}>
+                  {category.category_name}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* Modal Footer - Fixed at bottom */}
-          <div className="sticky bottom-0 bg-white dark:bg-gray-900 px-6 py-4 border-t rounded-b-lg">
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={onClose}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                {product ? 'Update Product' : 'Add Product'}
-              </button>
-            </div>
+          <div className="space-y-6">
+            <input
+              type="number"
+              name="displayPrice"
+              placeholder="Price"
+              onChange={handleChange}
+              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+            />
+            <input
+              type="number"
+              name="originalPrice"
+              placeholder="Original Price"
+              onChange={handleChange}
+              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+            />
+            <input
+              type="number"
+              name="total_stock"
+              placeholder="Stock Quantity"
+              onChange={handleChange}
+              className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+            />
+            <div className="flex items-center justify-between px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+  <div className="flex items-center">
+    <span className="text-base font-medium text-gray-900 dark:text-white mr-3">In Stock</span>
+    <span className={`text-sm ${formData.in_stock ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+      {formData.in_stock ? 'Available' : 'Not Available'}
+    </span>
+  </div>
+  <label className="relative inline-flex items-center cursor-pointer">
+    <input
+      type="checkbox"
+      className="sr-only peer"
+      checked={formData.in_stock}
+      onChange={handleInStockChange}
+    />
+    <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600">
+    </div>
+  </label>
+</div>
           </div>
         </div>
       </div>
+
+      {/* Modal Footer */}
+      <div className="sticky bottom-0 bg-white dark:bg-gray-900 px-8 py-2 border-t">
+        <div className="flex justify-end space-x-4">
+          <button
+            onClick={onClose}
+            className="px-6 py-3 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-700"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            className="px-6 py-3 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            {product ? 'Update Product' : 'Add Product'}
+          </button>
+        </div>
+      </div>
     </div>
+  </div>
   );
 };
 

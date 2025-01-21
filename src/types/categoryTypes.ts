@@ -4,13 +4,18 @@ export type Category = {
     no_of_items?: number;
     createdAt: string;
     updatedAt: string;
+    image?: string;
   };
   
-  export type NewCategory = Omit<Category, '_id' | 'createdAt' | 'updatedAt'>;
+  export type NewCategory = {
+    category_name: string;
+    no_of_items?: number;
+    imageUrl?: string;
+  }
   
   export type CategoryModalProps = {
     isOpen: boolean;
     onClose: () => void;
     category: Category | null;
-    onSubmit: (categoryData: NewCategory & Partial<Pick<Category, '_id'>>) => Promise<void>;
+    onHandleSubmit: (data: any) => Promise<void>;
   };

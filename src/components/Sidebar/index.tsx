@@ -515,7 +515,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
               {/* <!-- Menu Item Videos --> */}
 
               {/* <!-- Menu Item Banner --> */}
-              <li>
+              {/* <li>
                 <NavLink
                   to="/banner"
                   className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${pathname.includes('banner') && 'bg-graydark dark:bg-meta-4'
@@ -527,7 +527,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
 
                   Banner Management
                 </NavLink>
-              </li>
+              </li> */}
               {/* <!-- Menu Item Banner --> */}
 
               {/* <!-- Menu Item Stories --> */}

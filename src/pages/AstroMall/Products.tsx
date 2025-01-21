@@ -164,20 +164,20 @@ const Products: React.FC = () => {
               <div className="flex items-center px-2 col-span-1 sm:col-span-1">
                 <p className="font-medium text-center">Product</p>
               </div>
-              <div className="flex items-center justify-center col-span-2">
-                <p className="font-medium text-center">Brand</p>
-              </div>
-              <div className="flex items-center justify-center col-span-1 sm:col-span-1">
+              <div className="flex items-center justify-center col-span-1 sm:col-span-2">
                 <p className="font-medium text-center">Category</p>
               </div>
               <div className="flex items-center justify-center col-span-1 sm:col-span-1">
-                <p className="font-medium text-center">Price</p>
+                <p className="font-medium text-center">Display Price</p>
               </div>
               <div className="flex items-center justify-center col-span-1 sm:col-span-1">
-                <p className="font-medium text-center">Discounted Price</p>
+                <p className="font-medium text-center"> Price</p>
               </div>
               <div className="flex items-center justify-center col-span-1 sm:col-span-1">
                 <p className="font-medium text-center">Stock</p>
+              </div>
+              <div className="flex items-center justify-center col-span-1">
+                <p className="font-medium text-center">No. Of Stock</p>
               </div>
               <div className="flex items-center justify-center col-span-1 space-x-3.5">
                 <p className="font-medium text-center">Actions</p>

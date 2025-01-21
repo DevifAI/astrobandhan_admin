@@ -91,17 +91,74 @@
 // export default CategoryModal;
 
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Category, NewCategory, CategoryModalProps } from "../../types/categoryTypes";
 
-const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, category, onSubmit }) => {
-  const [formData, setFormData] = useState<NewCategory>({
+
+const CameraIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    className="w-10 h-10"
+  >
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+    <circle cx="12" cy="13" r="4" />
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    className="w-4 h-4"
+  >
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+
+const CategoryModal: React.FC<CategoryModalProps> = ({
+  isOpen,
+  onClose,
+  category,
+  onHandleSubmit,
+}) => {
+  const [formData, setFormData] = useState({
     category_name: category?.category_name || '',
     no_of_items: category?.no_of_items || 0,
+    image: category?.image || null, // Add image field
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(
+    category?.image || null // Initialize with existing image if available
+  );
+
+  // Function to handle image selection
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setFormData({ ...formData, image: file }); // Update formData with the selected image file
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Function to remove selected image
+  const removeImage = () => {
+    setPreview(null);
+    setFormData({ ...formData, image: null }); // Remove image from formData
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,10 +166,19 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, category
     setError(null);
 
     try {
-      const submitData = category 
-        ? { ...formData, _id: category._id }
-        : formData;
-      await onSubmit(submitData);
+      const formDataToSubmit = new FormData();
+      formDataToSubmit.append('category_name', formData.category_name);
+      formDataToSubmit.append('no_of_items', formData.no_of_items.toString());
+
+      if (formData.image) {
+        formDataToSubmit.append('image', formData.image); // Append the image file
+      }
+
+      if (category) {
+        formDataToSubmit.append('_id', category._id); // Include the ID if editing
+      }
+
+      await onHandleSubmit(formDataToSubmit);
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -121,84 +187,116 @@ const CategoryModal: React.FC<CategoryModalProps> = ({ isOpen, onClose, category
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 dark:bg-opacity-70">
-      <div className="absolute inset-0 backdrop-blur-lg border-4"></div>
+  return isOpen && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 ">
+  <div className="relative bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-lg mt-20">
+    <h2 className="text-3xl font-bold text-center mb-8 text-gray-900 dark:text-white">
+      {category ? 'Edit Category' : 'Add Category'}
+    </h2>
 
-      <div className="relative bg-white dark:bg-gray-800 p-8 shadow-lg w-full max-w-2xl h-auto overflow-y-auto z-10 rounded-lg">
-        <h2 className="text-2xl font-bold text-center mb-6 text-gray-900 dark:text-white">
-          {category ? 'Edit Category' : 'Add Category'}
-        </h2>
-        
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md">
-            {error}
-          </div>
-        )}
-        
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Category Name:
-            </label>
-            <input
-              type="text"
-              value={formData.category_name}
-              onChange={(e) => setFormData({ ...formData, category_name: e.target.value })}
-              required
-              className="mt-1 block w-full p-2.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-              placeholder="Enter category name"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              No of Items:
-            </label>
-            <input
-              type="number"
-              value={formData.no_of_items}
-              onChange={(e) => setFormData({ ...formData, no_of_items: parseInt(e.target.value) || 0 })}
-              className="mt-1 block w-full p-2.5 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-              placeholder="Enter number of items"
-            />
-          </div>
-
-          {category && (
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Category ID:
-              </label>
-              <input
-                type="text"
-                value={category._id}
-                disabled
-                className="mt-1 block w-full p-2.5 border border-gray-300 rounded-md shadow-sm bg-gray-50 dark:bg-gray-600 dark:border-gray-500 dark:text-gray-300"
-              />
-            </div>
-          )}
-
-          <div className="flex justify-end space-x-3 mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-75 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className={`px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 disabled:opacity-50 disabled:cursor-not-allowed ${
-                loading ? 'cursor-wait' : ''
-              }`}
-            >
-              {loading ? 'Saving...' : 'Save'}
-            </button>
-          </div>
-        </form>
+    {error && (
+      <div className="mb-6 p-4 bg-red-100 text-red-700 rounded-md text-lg">
+        {error}
       </div>
-    </div>
+    )}
+
+    <form onSubmit={handleSubmit}>
+      <div className="space-y-2">
+        <div>
+          <label className="block text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Category Image
+          </label>
+          <div className="flex flex-col items-center space-y-6">
+            <div className="relative w-40 h-40">
+              {preview ? (
+                <>
+                  <img
+                    src={preview}
+                    alt="Category preview"
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={removeImage}
+                    className="absolute -top-3 -right-3 p-2 bg-red-500 text-white rounded-full hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400"
+                  >
+                    <CloseIcon />
+                  </button>
+                </>
+              ) : (
+                <div className="w-full h-full rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                  <CameraIcon />
+                </div>
+              )}
+            </div>
+            <input
+              type="file"
+              onChange={handleImageChange}
+              accept="image/*"
+              className="hidden"
+              id="image-upload"
+            />
+            <label
+              htmlFor="image-upload"
+              className="cursor-pointer inline-flex items-center px-4 py-1 text-lg font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            >
+              {preview ? 'Change Image' : 'Upload Image'}
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Category Name
+          </label>
+          <input
+            type="text"
+            value={formData.category_name}
+            onChange={(e) =>
+              setFormData({ ...formData, category_name: e.target.value })
+            }
+            required
+            className="mt-1 block w-full py-2 px-4 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            placeholder="Enter category name"
+          />
+        </div>
+
+        <div>
+          <label className="block text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Number of Items
+          </label>
+          <input
+            type="number"
+            value={formData.no_of_items}
+            disabled
+            className="mt-1 block w-full py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-gray-100 text-gray-500 cursor-not-allowed text-lg dark:bg-gray-600 dark:border-gray-500 dark:text-gray-400"
+            placeholder="Enter number of items"
+          />
+        </div>
+      </div>
+
+      <div className="flex justify-end space-x-6 mt-8">
+        <button
+          type="button"
+          onClick={onClose}
+          className="px-3 py-1 text-lg bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-400"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={loading}
+          className={`px-3 py-1 text-lg bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed ${
+            loading ? 'cursor-wait' : ''
+          }`}
+        >
+          {loading ? 'Saving...' : 'Save Category'}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
   );
 };
 

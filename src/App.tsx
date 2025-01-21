@@ -32,6 +32,7 @@ import Products from './pages/AstroMall/Products';
 import Categories from './pages/AstroMall/Categories';
 import Orders from './pages/AstroMall/Orders';
 import ManageAIAstrologer from './pages/Astrologers/ManageAIAstrologers';
+import ComingSoon from './pages/ComingSoon';
 
 function App() {
   const [loading, setLoading] = useState<boolean>(true);
@@ -130,7 +131,7 @@ function App() {
           element={
             <>
               <PageTitle title=" Astrologers Send Notifications | Astro Bandhan" />
-              <SendNotifications />
+             <ComingSoon/>
             </>
           }
         />
