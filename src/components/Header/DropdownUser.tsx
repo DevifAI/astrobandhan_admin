@@ -31,6 +31,16 @@ const DropdownUser = () => {
     fetchData();
   }, []); // Runs once on component mount
 
+  const Logout = () => {
+    try {
+
+      localStorage.removeItem("User");
+      window.location.reload();
+      
+    } catch (error) {
+      console.error("An error occurred during logout:", error);
+    }
+  };
 
   return (
     <ClickOutside onClick={() => setDropdownOpen(false)} className="relative">
@@ -145,7 +155,8 @@ const DropdownUser = () => {
               </Link>
             </li> */}
           </ul>
-          <button className="flex items-center gap-3.5 px-6 py-4 text-sm font-medium duration-300 ease-in-out hover:text-primary lg:text-base">
+          <button onClick={Logout}
+          className="flex items-center gap-3.5 px-6 py-4 text-sm font-medium duration-300 ease-in-out hover:text-primary lg:text-base">
             <svg
               className="fill-current"
               width="22"

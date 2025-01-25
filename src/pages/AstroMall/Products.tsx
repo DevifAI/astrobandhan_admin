@@ -37,10 +37,10 @@ const Products: React.FC = () => {
   };
 
   const handleEditProduct = (updatedProduct: Product) => {
-    setProducts(
-      products.map((product) =>
-        product._id === updatedProduct._id ? updatedProduct : product,
-      ),
+    setProducts((prevProducts) =>
+      prevProducts.map((product) =>
+        product._id === updatedProduct._id ? updatedProduct : product
+      )
     );
     setEditProduct(null);
     setShowModal(false);
@@ -286,8 +286,7 @@ const Products: React.FC = () => {
           <ProductModal
             product={editProduct}
             onClose={() => setShowModal(false)}
-            onSave={editProduct ? handleEditProduct : handleAddProduct}
-            categories={[]}
+            onProductCreated={Products}
           />
         )}
       </div>

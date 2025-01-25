@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Route, Routes, useLocation } from 'react-router-dom';
+import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 
 import Loader from './common/Loader';
 import PageTitle from './components/PageTitle';
@@ -37,8 +37,20 @@ import ComingSoon from './pages/ComingSoon';
 function App() {
   const [loading, setLoading] = useState<boolean>(true);
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
+useEffect(() => {
 
+  const user = localStorage.getItem('User');
+  if (!user) {
+    
+    navigate('/auth/signin');
+  } else {
+    
+    setIsAuthenticated(true);
+  }
+}, [navigate]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -48,9 +60,11 @@ function App() {
     setTimeout(() => setLoading(false), 1000);
   }, []);
 
-  return loading ? (
-    <Loader />
-  ) : (
+  if (loading) {
+    return <Loader />;
+  }
+
+  return isAuthenticated ? (
     <DefaultLayout>
       <Routes>
         <Route
@@ -290,27 +304,31 @@ function App() {
             </>
           }
         />
-        <Route
-          path="/auth/signin"
-          element={
-            <>
-              <PageTitle title="Signin | Astro Bandhan" />
-              <SignIn />
-            </>
-          }
-        />
-        <Route
-          path="/auth/signup"
-          element={
-            <>
-              <PageTitle title="Signup | Astro Bandhan" />
-              <SignUp />
-            </>
-          }
-        />
+       
       </Routes>
     </DefaultLayout>
-  );
+  ) : (
+    <Routes>
+    <Route
+    path="/auth/signin"
+    element={
+      <>
+        <PageTitle title="Signin | Astro Bandhan" />
+        <SignIn />
+      </>
+    }
+  />
+  <Route
+    path="/auth/signup"
+    element={
+      <>
+        <PageTitle title="Signup | Astro Bandhan" />
+        <SignUp />
+      </>
+    }
+  />
+  </Routes>
+  )
 }
 
 export default App;

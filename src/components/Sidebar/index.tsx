@@ -65,7 +65,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
       <div className="flex items-center justify-center gap-1 py-2.5 lg:py-3.5">
         <NavLink to="/">
           {/* <img src={Logo} alt="Logo" /> */}
-          <p className='text-gray-200 text-2xl lg:text-4xl font-bold text-center'>ASTRO <br /> BANDHAN</p>
+          <p className='text-gray-200 text-2xl lg:text-4xl font-bold text-center'>RUDRA <br /> GANGA</p>
         </NavLink>
 
         <button
