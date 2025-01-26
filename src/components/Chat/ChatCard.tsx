@@ -3,90 +3,34 @@ import { Link } from 'react-router-dom';
 import { Chat } from '../../types/chat';
 import UserOne from '../../images/user/user-01.png';
 import UserTwo from '../../images/user/user-02.png';
-import UserThree from '../../images/user/user-03.png';
-import UserFour from '../../images/user/user-04.png';
-import UserFive from '../../images/user/user-05.png';
 import axiosInstance from '../../utils/axiosInstance';
+import toast, { Toaster } from 'react-hot-toast';
 
 const ChatCard = () => {
-  const [chatData, setChatData] = useState([
-    {
-      avatar: UserOne,
-      name: 'Devid Heilo',
-      text: 'How are you?',
-      time: 12,
-      textCount: 3,
-      color: '#10B981',
-    },
-    {
-      avatar: UserTwo,
-      name: 'Henry Fisher',
-      text: 'Waiting for you!',
-      time: 12,
-      textCount: 0,
-      color: '#DC3545',
-    },
-    {
-      avatar: UserFour,
-      name: 'Jhon Doe',
-      text: "What's up?",
-      time: 32,
-      textCount: 0,
-      color: '#10B981',
-    },
-    {
-      avatar: UserFive,
-      name: 'Jane Doe',
-      text: 'Great',
-      time: 32,
-      textCount: 2,
-      color: '#FFBA00',
-    },
-    {
-      avatar: UserOne,
-      name: 'Jhon Doe',
-      text: 'How are you?',
-      time: 32,
-      textCount: 0,
-      color: '#10B981',
-    },
-    {
-      avatar: UserThree,
-      name: 'Jhon Doe',
-      text: 'How are you?',
-      time: 32,
-      textCount: 3,
-      color: '#FFBA00',
-    },
-  ]);
+  const [chatData, setChatData] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalData, setModalData] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [response] = await Promise.all([
-          axiosInstance.get<any>('/admin/pending-astrologer-requests'),
-        ]);
-        // console.log(response.data.data.requests);
-
-        // Map the requests and add an avatar field based on gender
+        const response = await axiosInstance.get<any>('/admin/pending-astrologer-requests');
         const processedData = response.data.data.requests.map((request: any) => ({
           ...request,
           avatar: request.gender === 'male' ? UserOne : UserTwo,
         }));
-
-        // Update state with the processed data
         setChatData(processedData);
       } catch (error: any) {
-        console.error('Error fetching dashboard counts:', error.response?.data || error.message);
+        console.error('Error fetching astrologer requests:', error.response?.data || error.message);
       }
     };
 
     fetchData();
   }, []); // Runs once on component mount
 
-  const handleVerifyClick = (chat:any) => {
+  const handleVerifyClick = (chat: any) => {
     setModalData(chat);
     setModalVisible(true);
   };
@@ -96,37 +40,69 @@ const ChatCard = () => {
     setModalData(null);
   };
 
+  const handleDelete = async (id: string) => {
+    try {
+      // Send DELETE request to remove the astrologer request
+      const response = await axiosInstance.post('/admin/delete-astrologer-requests', {
+        userId: id,
+      });
+
+      // Remove the deleted request from the state
+      setChatData(prevData => prevData.filter(chat => chat._id !== id));
+
+      // Show success message
+      toast.success("Astrologer Deleted Successfully", {
+        position: 'top-center',
+        duration: 3000, // Automatically close the toast after 3 seconds
+      });
+      setErrorMessage('');
+    } catch (error: any) {
+      // Show error message if the deletion fails
+      toast.error("Error deleting astrologer request", {
+        position: 'top-center',
+        duration: 3000, // Automatically close the toast after 3 seconds
+      });
+      setSuccessMessage('');
+    }
+  };
+
   return (
     <div className="col-span-12 rounded-sm border border-stroke bg-white pt-6 shadow-default dark:border-strokedark dark:bg-boxdark xl:col-span-4">
       <h4 className="mb-6 px-7.5 text-xl font-semibold text-black dark:text-white">
         Pending Astrologers Request
       </h4>
 
+      {/* Success/Error Messages */}
+      {successMessage && <div className="text-green-500">{successMessage}</div>}
+      {errorMessage && <div className="text-red-500">{errorMessage}</div>}
+
       {/* Scrollable container */}
       <div className="h-100 overflow-y-auto scrollbar-hide"
-      style={{
-        scrollbarWidth: 'none',      // Firefox
-        msOverflowStyle: 'none',     // IE and Edge
-      }}
+        style={{
+          scrollbarWidth: 'none',      // Firefox
+          msOverflowStyle: 'none',     // IE and Edge
+        }}
       >
-        {chatData.map((chat, key) => (
-          <Link
-            to="/"
-            className="flex items-center gap-5 py-3 px-7.5 hover:bg-gray-3 dark:hover:bg-meta-4"
+        {chatData?.length > 0 && chatData.map((chat, key) => (
+          <div
             key={key}
+            className="flex items-center gap-4 py-3 px-6 hover:bg-gray-200 dark:hover:bg-meta-4 border-b border-stroke dark:border-strokedark"
           >
-            <div className="relative h-12 w-12 rounded-full">
-              <img src={chat.avatar} alt="User" />
+            {/* Avatar */}
+            <div className="relative h-14 w-14 rounded-full overflow-hidden">
+              <img src={chat?.avatar} alt="User" className="object-cover w-full h-full" />
             </div>
 
-            <div className="flex flex-1 items-center justify-between">
-              <div>
-                <h5 className="font-medium text-black dark:text-white">
-                  {chat.name}
-                </h5>
-              </div>
+            {/* Chat Info */}
+            <div className="flex-1 flex flex-col gap-1">
+              <h5 className="font-medium text-black dark:text-white">{chat.name}</h5>
+              {/* <p className="text-sm text-gray-500 dark:text-gray-300">{chat.bio}</p> */}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2">
               <button
-                className="rounded-md bg-blue-300 px-2 py-1 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 dark:bg-blue-400 dark:hover:bg-blue-500 dark:focus:ring-blue-300"
+                className="rounded-md bg-blue-300 px-4 py-2 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 dark:bg-blue-400 dark:hover:bg-blue-500 dark:focus:ring-blue-300"
                 onClick={(e) => {
                   e.preventDefault();
                   handleVerifyClick(chat);
@@ -135,16 +111,16 @@ const ChatCard = () => {
                 View
               </button>
               <button
-                className="rounded-md bg-blue-300 px-2 py-1 text-white font-medium hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 dark:bg-blue-400 dark:hover:bg-blue-500 dark:focus:ring-blue-300"
+                className="rounded-md bg-red-300 px-4 py-2 text-white font-medium hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-opacity-75 dark:bg-red-400 dark:hover:bg-red-500 dark:focus:ring-red-300"
                 onClick={(e) => {
                   e.preventDefault();
-                  handleVerifyClick(chat);
+                  handleDelete(chat._id);  // Pass the chat ID to delete the astrologer request
                 }}
               >
                 Delete
               </button>
             </div>
-          </Link>
+          </div>
         ))}
       </div>
 
@@ -184,10 +160,9 @@ const ChatCard = () => {
           </div>
         </div>
       )}
+      <Toaster />
     </div>
   );
 };
 
 export default ChatCard;
-
-

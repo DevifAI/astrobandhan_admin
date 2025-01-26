@@ -4,7 +4,7 @@ import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import Loader from './common/Loader';
 import PageTitle from './components/PageTitle';
 import SignIn from './pages/Authentication/SignIn';
-import SignUp from './pages/Authentication/SignUp';
+// import SignUp from './pages/Authentication/SignUp';
 import Calendar from './pages/Calendar';
 import Chart from './pages/Chart';
 import ECommerce from './pages/Dashboard/ECommerce';
@@ -125,7 +125,7 @@ useEffect(() => {
           path="/astrologers/manageaiAstrologers"
           element={
             <>
-              <PageTitle title=" Astrologers Pending Request | Astro Bandhan" />
+              <PageTitle title=" Manage AI Astrologer | Astro Bandhan" />
               <ManageAIAstrologer />
             </>
           }
@@ -318,15 +318,7 @@ useEffect(() => {
       </>
     }
   />
-  <Route
-    path="/auth/signup"
-    element={
-      <>
-        <PageTitle title="Signup | Astro Bandhan" />
-        <SignUp />
-      </>
-    }
-  />
+ 
   </Routes>
   )
 }
