@@ -19,6 +19,7 @@ const ManageAIAstrologer = () => {
   const [allUsers, setAllUsers] = useState([]); // Holds all users fetched from the API
   const [currentPage, setCurrentPage] = useState(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref for storing the timeout ID
+  const [currentStep, setCurrentStep] = useState(1)
   const [newUser, setNewUser] = useState({
     name: "",
     avatar: "",
@@ -28,10 +29,10 @@ const ManageAIAstrologer = () => {
     pricePerChatMinute: 0,
     pricePerCallMinute: 0,
     pricePerVideoCallMinute: 0,
-    isFeatured:false,
-    chatCommission:0,
-    callCommission:0,
-    videoCallCommission:0,
+    isFeatured: false,
+    chatCommission: 0,
+    callCommission: 0,
+    videoCallCommission: 0,
     rating: 0,
 
 
@@ -169,6 +170,7 @@ const ManageAIAstrologer = () => {
   };
 
   const CLOUDINARY_CLOUD_NAME = "dlol2hjj8";
+
   const handlePhotoChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -190,6 +192,7 @@ const ManageAIAstrologer = () => {
       setUploading(false);
     }
   };
+
   const handlePhotoUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -224,7 +227,7 @@ const ManageAIAstrologer = () => {
 
     try {
       // Send the cleaned new astrologer data to the API
-      const response = await axiosInstance.post('/admin/add/ai/astrologer', updatedNewUser);
+      const response = await axiosInstance.post('/admin/signup/astrologer', updatedNewUser);
 
       if (response.data.success) {
         toast.success(response.data.message || "AI Astrologer added successfully!"); // Show success toast
@@ -698,277 +701,320 @@ const ManageAIAstrologer = () => {
       {isAddModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-999">
           <div className="bg-white dark:bg-boxdark rounded-lg p-6 w-full max-w-4xl mx-4 landscape-modal">
-            <h2 className="text-xl font-semibold mb-4">Add  Astrologer</h2>
+            <h2 className="text-xl font-semibold mb-4">Add Astrologer</h2>
             <form onSubmit={handleAddAstrologerSubmit}>
-              <div className="grid grid-cols-2 gap-4">
-                {/* Avatar Image and Upload */}
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium mb-1">Avatar</label>
-                  {uploading && (
-                    <p className="text-sm text-gray-500">Uploading...</p>
-                  )}
-                  <div className="flex items-center space-x-4">
-                    {/* Display Current Avatar */}
-                    <img
-                      src={newUser.avatar || ""}
-                      alt="Avatar"
+              {/* Step 1: Basic Information */}
+              {currentStep === 1 && (
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Avatar Image and Upload */}
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium mb-1">Avatar</label>
+                    {uploading && (
+                      <p className="text-sm text-gray-500">Uploading...</p>
+                    )}
+                    <div className="flex items-center space-x-4">
+                      {/* Display Current Avatar */}
+                      <img
+                        src={newUser.avatar || ""}
+                        alt="Avatar"
+                        className="h-16 w-16 rounded-full object-cover"
+                      />
+                      {/* File Input for Upload */}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        className="w-full p-2 border border-stroke rounded-md"
+                      />
+                    </div>
+                  </div>
 
-                      className="h-16 w-16 rounded-full object-cover"
-                    />
-                    {/* File Input for Upload */}
+                  {/* Name */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Name</label>
                     <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
+                      type="text"
+                      value={newUser.name || ""}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, name: e.target.value })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Experience */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Experience (years)
+                    </label>
+                    <input
+                      type="number"
+                      value={newUser.experience || ""}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          experience: e.target.value,
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Specialities */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Specialities
+                    </label>
+                    <input
+                      type="text"
+                      value={newUser.specialities.join(", ") || ""}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          specialities: e.target.value.split(", "),
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Rating */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Rating</label>
+                    <input
+                      type="number"
+                      value={newUser.rating || ""}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          rating: e.target.value,
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Is Trending */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Is Trending</label>
+                    <select
+                      value={newUser.isFeatured ? "true" : "false"}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          isFeatured: e.target.value === "true",
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    >
+                      <option value="true">Yes</option>
+                      <option value="false">No</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Pricing and Commissions */}
+              {currentStep === 2 && (
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Price Per Call Minute */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Price Per Call Minute ($)
+                    </label>
+                    <input
+                      type="number"
+                      value={newUser.pricePerCallMinute}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          pricePerCallMinute: e.target.value,
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Price Per Video Call Minute */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Price Per Video Call Minute ($)
+                    </label>
+                    <input
+                      type="number"
+                      value={newUser.pricePerVideoCallMinute}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          pricePerVideoCallMinute: e.target.value,
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Price Per Chat Minute */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Price Per Chat Minute ($)
+                    </label>
+                    <input
+                      type="number"
+                      value={newUser.pricePerChatMinute}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          pricePerChatMinute: e.target.value,
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Commission Per Chat Minute */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Commission Per Chat Minute ($)
+                    </label>
+                    <input
+                      type="number"
+                      value={newUser.chatCommission}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          chatCommission: e.target.value,
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Commission Per Call Minute */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Commission Per Call Minute ($)
+                    </label>
+                    <input
+                      type="number"
+                      value={newUser.callCommission}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          callCommission: e.target.value,
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Commission Per Video Call Minute */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Commission Per Video Call Minute ($)
+                    </label>
+                    <input
+                      type="number"
+                      value={newUser.videoCallCommission}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          videoCallCommission: e.target.value,
+                        })
+                      }
                       className="w-full p-2 border border-stroke rounded-md"
                     />
                   </div>
                 </div>
+              )}
 
-                {/* Name */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">Name</label>
-                  <input
-                    type="text"
-                    value={newUser.name || ""}
-                    onChange={(e) =>
-                      setNewUser({ ...newUser, name: e.target.value })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
+              {/* Step 3: Verification and Gender */}
+              {currentStep === 3 && (
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Verified */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Verified</label>
+                    <select
+                      value={newUser.isVerified ? "Yes" : "No"}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          isVerified: e.target.value === "Yes",
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    >
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </div>
+
+                  {/* Gender */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Gender</label>
+                    <select
+                      value={newUser.gender || ""}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          gender: e.target.value,
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    >
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
                 </div>
-
-                {/* Experience */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Experience (years)
-                  </label>
-                  <input
-                    type="number"
-                    value={newUser.experience || ""}
-                    onChange={(e) =>
-                      setNewUser({
-                        ...newUser,
-                        experience: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-
-                {/* Specialities */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Specialities
-                  </label>
-                  <input
-                    type="text"
-                    value={newUser.specialities.join(", ") || ""}
-                    onChange={(e) =>
-                      setNewUser({
-                        ...newUser,
-                        specialities: e.target.value.split(", "),
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-
-                {/* Rating */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">Rating</label>
-                  <input
-                    type="number"
-                    value={newUser.rating || ""}
-                    onChange={(e) => setNewUser({
-                      ...newUser, rating: e.target.value
-                    })}
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-
-
-                {/* Rating */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">Is Trending</label>
-                  <select
-                    value={newUser.isFeatured ? "true" : "false"} // Convert boolean to string for the dropdown
-                    onChange={(e) =>
-                      setNewUser({
-                        ...newUser,
-                        isFeatured: e.target.value === "true", // Convert string back to boolean
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  >
-                    <option value="true">Yes</option>
-                    <option value="false">No</option>
-                  </select>
-                </div>
-
-
-                {/* Price Per Call Minute */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Price Per Call Minute ($)
-                  </label>
-                  <input
-                    type="number"
-                    value={newUser.pricePerCallMinute}
-                    onChange={(e) =>
-                      setNewUser({
-                        ...newUser,
-                        pricePerCallMinute: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-                {/* Price Per Call Minute */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Price Per Video Call Minute ($)
-                  </label>
-                  <input
-                    type="number"
-                    value={newUser.pricePerVideoCallMinute}
-                    onChange={(e) =>
-                      setNewUser({
-                        ...newUser,
-                        pricePerVideoCallMinute: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-
-                {/* Price Per Chat Minute */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Price Per Chat Minute ($)
-                  </label>
-                  <input
-                    type="number"
-                    value={newUser.pricePerChatMinute}
-                    onChange={(e) =>
-                      setNewUser({
-                        ...newUser,
-                        pricePerChatMinute: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-
-                {/* Price Per Chat Minute */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Commission Per Chat Minute ($)
-                  </label>
-                  <input
-                    type="number"
-                    value={newUser.chatCommission}
-                    onChange={(e) =>
-                      setNewUser({
-                        ...newUser,
-                        chatCommission: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-                {/* Price Per Chat Minute */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Commission Per Call Minute ($)
-                  </label>
-                  <input
-                    type="number"
-                    value={newUser.callCommission}
-                    onChange={(e) =>
-                      setNewUser({
-                        ...newUser,
-                        callCommission: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-
-                {/* Price Per Chat Minute */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Commission Per Video Call Minute ($)
-                  </label>
-                  <input
-                    type="number"
-                    value={newUser.videoCallCommission}
-                    onChange={(e) =>
-                      setNewUser({
-                        ...newUser,
-                        videoCallCommission: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-
-
-
-                {/* Verified */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">Verified</label>
-                  <select
-                    value={newUser.isVerified ? "Yes" : "No"}
-                    onChange={(e) =>
-                      setNewUser({
-                        ...newUser,
-                        isVerified: e.target.value === "Yes",
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  >
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                  </select>
-                </div>
-
-                {/* Gender */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">Gender</label>
-                  <select
-                    value={newUser.gender || ""}
-                    onChange={(e) =>
-                      setNewUser({
-                        ...newUser,
-                        gender: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-              </div>
+              )}
 
               {/* Modal Footer */}
               <div className="flex justify-end mt-6 space-x-4">
+                {/* Cancel Button */}
                 <button
                   type="button"
-                  onClick={() => setIsAddModalOpen(false)}
+                  onClick={() => {
+                    setIsAddModalOpen(false);
+                    setCurrentStep(1); // Reset step to 1
+                  }}
                   className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  disabled={uploading ? true : false}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                >
-                  Save Changes
-                </button>
+
+                {/* Previous Button */}
+                {currentStep > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(currentStep - 1)}
+                    className="px-4 py-2 bg-blue-300 text-white rounded-md hover:bg-blue-400"
+                  >
+                    Previous
+                  </button>
+                )}
+
+                {/* Next Button */}
+                {currentStep < 3 && (
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(currentStep + 1)}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                  >
+                    Next
+                  </button>
+                )}
+
+                {/* Submit Button */}
+                {currentStep === 3 && (
+                  <button
+                    type="submit"
+                    disabled={uploading}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                  >
+                    Save Changes
+                  </button>
+                )}
               </div>
             </form>
           </div>
