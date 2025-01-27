@@ -37,7 +37,7 @@ const ManageAIAstrologer = () => {
     const fetchUsers = async () => {
       try {
         const response = await axiosInstance.post("/admin/get/all/ai/astrologers");
-        console.log(response.data);
+        // console.log(response.data);
         setAllUsers(response.data.data); // Store all users
         setFilteredUsers(response.data.data); // Initialize filtered users with all users
       } catch (error) {

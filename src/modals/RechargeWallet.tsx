@@ -93,9 +93,9 @@ const RechargeWalletModal: React.FC<RechargeWalletModalProps> = ({ isOpen, onClo
       const response = await axiosInstance.post('/user/add/balance', payload);
 
       // Handle success
-      console.log({ response })
-      console.log(response.data)
-      console.log(response.data.statusCode)
+      // console.log({ response })
+      // console.log(response.data)
+      // console.log(response.data.statusCode)
       if (response.data.statusCode === 201 || response.data.statusCode === 200) {
         // toast.success("done")
         setIsRechargeDone(true)

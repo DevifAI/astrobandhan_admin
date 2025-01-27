@@ -31,7 +31,7 @@ const Customer = () => {
     const fetchUsers = async () => {
       try {
         const response = await axiosInstance.post("/admin/get/users");
-        console.log(response.data);
+        // console.log(response.data);
         setUsers(response.data.data); // Set the fetched users
       } catch (error) {
         console.error("Error fetching users:", error);
@@ -70,9 +70,9 @@ const Customer = () => {
     if (isRechargeDone) {
       toast.success("Recharge Done");
     }
-    console.log({isAddCustomerAdded})
+    // console.log({isAddCustomerAdded})
     if (isAddCustomerAdded.status && !isAddCustomerAdded.message !== "") {
-      console.log({isAddCustomerAdded})
+      // console.log({isAddCustomerAdded})
       toast.error(isAddCustomerAdded.message);
     }
     // if (!isAddCustomerAdded.status && !isAddCustomerAdded.message.trim() !== "") {

@@ -97,7 +97,7 @@ const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
     };
 
 
-    console.log({ formData })
+    // console.log({ formData })
 
     if (!isOpen) return null;
 

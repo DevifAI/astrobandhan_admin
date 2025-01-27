@@ -24,7 +24,7 @@ const Products: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>(''); // Add search query state
 
-  console.log(products)
+  // console.log(products)
   const handleAddProduct = async (newProduct: Product) => {
     try {
       const response = await addProduct(newProduct);

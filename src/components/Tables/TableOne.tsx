@@ -23,7 +23,7 @@ const TableOne = () => {
     const fetchTopAstrologers = async () => {
       try {
         const response = await axiosInstance.post('/admin/top/astrologers');
-        console.log("API Response: ", response.data); // Log the API response
+        // console.log("API Response: ", response.data); // Log the API response
         if (response.data.success && response.data.data) {
           // Update state with the fetched astrologers
           setAstrologers(response.data.data.map((astrologer: any) => ({

@@ -21,7 +21,7 @@ const Orders = () => {
   
     // console.log(orders)
     // console.log({selectedProduct})
-      console.log({selectedInvoice})
+      // console.log({selectedInvoice})
     // console.log({selectedUser})
 
 
@@ -60,7 +60,7 @@ const Orders = () => {
           const response = await axiosInstance.get('/order/');
           if (Array.isArray(response.data.data)) {
             setOrders(response.data.data);
-            console.log({orders})
+            // console.log({orders})
           }
         } catch (error: any) {
           setError(
