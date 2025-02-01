@@ -28,7 +28,8 @@ const ManageAIAstrologer = () => {
     pricePerChatMinute: 0,
     pricePerCallMinute: 0,
     rating: 0,
-
+    isAvailable: true,
+    isFeatured: false
 
   })
 
@@ -72,6 +73,8 @@ const ManageAIAstrologer = () => {
     debouncedSearch(searchTerm);
   }, [searchTerm, debouncedSearch]);
 
+  console.log({ selectedUser })
+
   // Handle page change
   const handlePageClick = ({ selected }: { selected: number }) => {
     setCurrentPage(selected);
@@ -103,7 +106,7 @@ const ManageAIAstrologer = () => {
   // Handle delete confirmation
   const handleDeleteConfirm = async () => {
     try {
-      // console.log({ selectedUser });
+      console.log({ selectedUser });
       // console.log(selectedUser._id);
 
       // Make a POST request to delete the astrologer, sending the ID in the payload
@@ -134,6 +137,7 @@ const ManageAIAstrologer = () => {
   // Handle form submission for editing
   const handleEditSubmit = async (e) => {
     e.preventDefault(); // Prevent default form submission behavior
+    console.log({ selectedUser });
 
     try {
       // Make a POST request to update the astrologer
@@ -210,21 +214,21 @@ const ManageAIAstrologer = () => {
 
   const handleAddAstrologerSubmit = async (e) => {
     e.preventDefault(); // Prevent default form submission behavior
-  
+
     // Clean up the specialities array by removing empty strings
     const cleanedSpecialities = newUser.specialities.filter(speciality => speciality.trim() !== "");
-  
+
     // Update the newUser object with the cleaned specialities array
     const updatedNewUser = { ...newUser, specialities: cleanedSpecialities };
-  
+
     try {
       // Send the cleaned new astrologer data to the API
       const response = await axiosInstance.post('/admin/add/ai/astrologer', updatedNewUser);
-  
+
       if (response.data.success) {
         toast.success(response.data.message || "AI Astrologer added successfully!"); // Show success toast
         setIsAddModalOpen(false); // Close the modal
-  
+
         // Optionally, add the new astrologer to the state
         const updatedUsers = [...allUsers, response.data.data];
         setAllUsers(updatedUsers);
@@ -237,7 +241,7 @@ const ManageAIAstrologer = () => {
       toast.error("Something went wrong. Please try again."); // Show error toast
     }
   };
-  
+
 
 
   return (
@@ -399,7 +403,7 @@ const ManageAIAstrologer = () => {
 
       {/* Edit Modal */}
       {isEditModalOpen && selectedUser && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-999">
           <div className="bg-white dark:bg-boxdark rounded-lg p-6 w-full max-w-4xl mx-4 landscape-modal">
             <h2 className="text-xl font-semibold mb-4">Edit AI Astrologer</h2>
             <form onSubmit={handleEditSubmit}>
@@ -448,13 +452,19 @@ const ManageAIAstrologer = () => {
                   </label>
                   <input
                     type="number"
+                    min={0}
+                    max={100}
                     value={selectedUser.experience}
-                    onChange={(e) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        experience: e.target.value,
-                      })
-                    }
+                    onChange={(e) => {
+                      const value = Number(e.target.value);
+                      if (value >= 0) {
+                        setSelectedUser({
+                          ...selectedUser,
+                          experience: value,
+                        });
+                      }
+                    }}
+
                     className="w-full p-2 border border-stroke rounded-md"
                   />
                 </div>
@@ -490,7 +500,7 @@ const ManageAIAstrologer = () => {
 
 
                 {/* Price Per Call Minute */}
-                <div>
+                {/* <div>
                   <label className="block text-sm font-medium mb-1">
                     Price Per Call Minute ($)
                   </label>
@@ -500,21 +510,23 @@ const ManageAIAstrologer = () => {
                     onChange={(e) =>
                       setSelectedUser({
                         ...selectedUser,
-                        pricePerCallMinute: e.target.value,
+                        pricePerCallMinute: parseFloat(e.target.value) || 0, // Ensure numeric value
                       })
                     }
                     className="w-full p-2 border border-stroke rounded-md"
                   />
-                </div>
+                </div> */}
+
 
                 {/* Price Per Chat Minute */}
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Price Per Chat Minute ($)
+                    Price Per Chat Minute
                   </label>
                   <input
                     type="number"
                     value={selectedUser.pricePerChatMinute}
+                    min={0}
                     onChange={(e) =>
                       setSelectedUser({
                         ...selectedUser,
@@ -528,13 +540,48 @@ const ManageAIAstrologer = () => {
 
                 {/* Verified */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">Verified</label>
+                  <label className="block text-sm font-medium mb-1">is Verified</label>
                   <select
                     value={selectedUser.isVerified ? "Yes" : "No"}
                     onChange={(e) =>
                       setSelectedUser({
                         ...selectedUser,
-                        isVerified: e.target.value === "Yes",
+                        isVerified: e.target.value === "Yes" ? true : false,
+                      })
+                    }
+                    className="w-full p-2 border border-stroke rounded-md"
+                  >
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+
+                {/* isAvailable */}
+                <div>
+                  <label className="block text-sm font-medium mb-1">is Available?</label>
+                  <select
+                    value={selectedUser.isAvailable ? "Yes" : "No"}
+                    onChange={(e) =>
+                      setSelectedUser({
+                        ...selectedUser,
+                        isAvailable: e.target.value === "Yes" ? true : false,
+                      })
+                    }
+                    className="w-full p-2 border border-stroke rounded-md"
+                  >
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                {/* is Trending */}
+                <div>
+                  <label className="block text-sm font-medium mb-1">is Trending ?</label>
+                  <select
+                    value={selectedUser.isFeatured ? "Yes" : "No"}
+                    onChange={(e) =>
+                      setSelectedUser({
+                        ...selectedUser,
+                        isFeatured: e.target.value === "Yes" ? true : false,
                       })
                     }
                     className="w-full p-2 border border-stroke rounded-md"
@@ -582,226 +629,230 @@ const ManageAIAstrologer = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </div>
+          </div >
+        </div >
       )}
-      {isDeleteModalOpen && selectedUser && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white dark:bg-boxdark rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-semibold mb-4">Delete Astrologer</h2>
-            <p className="mb-6">
-              Are you sure you want to delete{" "}
-              <span className="font-bold">{selectedUser.name}</span>?
-            </p>
-            <div className="flex justify-end space-x-4">
-              <button
-                type="button"
-                onClick={() => setIsDeleteModalOpen(false)} // Close the modal
-                className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
-              >
-                No
-              </button>
-              <button
-                type="button"
-                onClick={handleDeleteConfirm} // Confirm deletion
-                className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
-              >
-                Yes
-              </button>
+      {
+        isDeleteModalOpen && selectedUser && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div className="bg-white dark:bg-boxdark rounded-lg p-6 w-full max-w-md">
+              <h2 className="text-xl font-semibold mb-4">Delete Astrologer</h2>
+              <p className="mb-6">
+                Are you sure you want to delete{" "}
+                <span className="font-bold">{selectedUser.name}</span>?
+              </p>
+              <div className="flex justify-end space-x-4">
+                <button
+                  type="button"
+                  onClick={() => setIsDeleteModalOpen(false)} // Close the modal
+                  className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
+                >
+                  No
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteConfirm} // Confirm deletion
+                  className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600"
+                >
+                  Yes
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-      {isAddModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white dark:bg-boxdark rounded-lg p-6 w-full max-w-4xl mx-4 landscape-modal">
-            <h2 className="text-xl font-semibold mb-4">Add AI Astrologer</h2>
-            <form onSubmit={handleAddAstrologerSubmit}>
-              <div className="grid grid-cols-2 gap-4">
-                {/* Avatar Image and Upload */}
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium mb-1">Avatar</label>
-                  {uploading && (
-                    <p className="text-sm text-gray-500">Uploading...</p>
-                  )}
-                  <div className="flex items-center space-x-4">
-                    {/* Display Current Avatar */}
-                    <img
-                      src={newUser.avatar || ""}
-                      alt="Avatar"
+        )
+      }
+      {
+        isAddModalOpen && (
+          <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-999">
+            <div className="bg-white dark:bg-boxdark rounded-lg p-6 w-full max-w-4xl mx-4 landscape-modal">
+              <h2 className="text-xl font-semibold mb-4">Add AI Astrologer</h2>
+              <form onSubmit={handleAddAstrologerSubmit}>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Avatar Image and Upload */}
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium mb-1">Avatar</label>
+                    {uploading && (
+                      <p className="text-sm text-gray-500">Uploading...</p>
+                    )}
+                    <div className="flex items-center space-x-4">
+                      {/* Display Current Avatar */}
+                      <img
+                        src={newUser.avatar || ""}
+                        alt="Avatar"
 
-                      className="h-16 w-16 rounded-full object-cover"
-                    />
-                    {/* File Input for Upload */}
+                        className="h-16 w-16 rounded-full object-cover"
+                      />
+                      {/* File Input for Upload */}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoUpload}
+                        className="w-full p-2 border border-stroke rounded-md"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Name */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Name</label>
                     <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
+                      type="text"
+                      value={newUser.name || ""}
+                      onChange={(e) =>
+                        setNewUser({ ...newUser, name: e.target.value })
+                      }
                       className="w-full p-2 border border-stroke rounded-md"
                     />
                   </div>
+
+                  {/* Experience */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Experience (years)
+                    </label>
+                    <input
+                      type="number"
+                      value={newUser.experience || ""}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          experience: e.target.value,
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Specialities */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Specialities
+                    </label>
+                    <input
+                      type="text"
+                      value={newUser.specialities.join(", ") || ""}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          specialities: e.target.value.split(", "),
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Rating */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Rating</label>
+                    <input
+                      type="number"
+                      value={newUser.rating || ""}
+                      onChange={(e) => setNewUser({
+                        ...newUser, rating: e.target.value
+                      })}
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+
+                  {/* Price Per Call Minute */}
+                  {/* <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Price Per Call Minute ($)
+                    </label>
+                    <input
+                      type="number"
+                      value={newUser.pricePerCallMinute || ""}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          pricePerCallMinute: e.target.value,
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div> */}
+
+                  {/* Price Per Chat Minute */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Price Per Chat Minute
+                    </label>
+                    <input
+                      type="number"
+                      value={newUser.pricePerChatMinute || ""
+                      }
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          pricePerChatMinute: e.target.value,
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+
+                  {/* Verified */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Verified</label>
+                    <select
+                      value={newUser.isVerified ? "Yes" : "No"}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          isVerified: e.target.value === "Yes",
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    >
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </div>
+
+                  {/* Gender */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Gender</label>
+                    <select
+                      value={newUser.gender || ""}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          gender: e.target.value,
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    >
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
                 </div>
 
-                {/* Name */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">Name</label>
-                  <input
-                    type="text"
-                    value={newUser.name || ""}
-                    onChange={(e) =>
-                      setNewUser({ ...newUser, name: e.target.value })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-
-                {/* Experience */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Experience (years)
-                  </label>
-                  <input
-                    type="number"
-                    value={newUser.experience || ""}
-                    onChange={(e) =>
-                      setNewUser({
-                        ...newUser,
-                        experience: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-
-                {/* Specialities */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Specialities
-                  </label>
-                  <input
-                    type="text"
-                    value={newUser.specialities.join(", ") || ""}
-                    onChange={(e) =>
-                      setNewUser({
-                        ...newUser,
-                        specialities: e.target.value.split(", "),
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-
-                {/* Rating */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">Rating</label>
-                  <input
-                    type="number"
-                    value={newUser.rating || ""}
-                    onChange={(e) => setNewUser({
-                      ...newUser, rating:e.target.value
-                    })}
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-
-
-                {/* Price Per Call Minute */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Price Per Call Minute ($)
-                  </label>
-                  <input
-                    type="number"
-                    value={newUser.pricePerCallMinute || ""}
-                    onChange={(e) =>
-                      setNewUser({
-                        ...newUser,
-                        pricePerCallMinute: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-
-                {/* Price Per Chat Minute */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Price Per Chat Minute ($)
-                  </label>
-                  <input
-                    type="number"
-                    value={newUser.pricePerChatMinute || ""
-                    }
-                    onChange={(e) =>
-                      setNewUser({
-                        ...newUser,
-                        pricePerChatMinute: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-
-
-                {/* Verified */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">Verified</label>
-                  <select
-                    value={newUser.isVerified ? "Yes" : "No"}
-                    onChange={(e) =>
-                      setNewUser({
-                        ...newUser,
-                        isVerified: e.target.value === "Yes",
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
+                {/* Modal Footer */}
+                <div className="flex justify-end mt-6 space-x-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddModalOpen(false)}
+                    className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
                   >
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                  </select>
-                </div>
-
-                {/* Gender */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">Gender</label>
-                  <select
-                    value={newUser.gender || ""}
-                    onChange={(e) =>
-                      setNewUser({
-                        ...newUser,
-                        gender: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={uploading ? true : false}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
                   >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
+                    Save Changes
+                  </button>
                 </div>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="flex justify-end mt-6 space-x-4">
-                <button
-                  type="button"
-                  onClick={() => setIsAddModalOpen(false)}
-                  className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={uploading ? true : false}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
-        </div>
-      )}
+        )
+      }
       <Toaster />
     </>
   );

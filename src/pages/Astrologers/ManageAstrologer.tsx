@@ -247,6 +247,51 @@ const ManageAIAstrologer = () => {
   };
 
 
+  const validateCurrentStep = (step: any) => {
+    switch (step) {
+      case 1:
+        // Validate Step 1 fields
+        if (
+          !newUser.avatar ||
+          !newUser.name ||
+          !newUser.experience ||
+          newUser.specialities.length === 0 ||
+          newUser.rating === null
+        ) {
+          toast.error("Please fill all required fields in Step 1.");
+          return false;
+        }
+        break;
+
+      case 2:
+        // Validate Step 2 fields
+        if (
+          newUser.pricePerCallMinute === null ||
+          newUser.pricePerVideoCallMinute === null ||
+          newUser.pricePerChatMinute === null ||
+          newUser.chatCommission === null ||
+          newUser.callCommission === null ||
+          newUser.videoCallCommission === null
+        ) {
+          toast.error("Please fill all required fields in Step 2.");
+          return false;
+        }
+        break;
+
+      case 3:
+        // Validate Step 3 fields
+        if (newUser.isVerified === null || !newUser.gender) {
+          toast.error("Please fill all required fields in Step 3.");
+          return false;
+        }
+        break;
+
+      default:
+        return true;
+    }
+    return true;
+  };
+
 
   return (
     <>
@@ -701,14 +746,20 @@ const ManageAIAstrologer = () => {
       {isAddModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-999">
           <div className="bg-white dark:bg-boxdark rounded-lg p-6 w-full max-w-4xl mx-4 landscape-modal">
-            <h2 className="text-xl font-semibold mb-4">Add Astrologer</h2>
+            <div className="w-full flex justify-between">
+              <h2 className="text-xl font-semibold mb-4">Add Astrologer</h2>
+              <p className="font-bold">Step {currentStep}</p>
+            </div>
             <form onSubmit={handleAddAstrologerSubmit}>
               {/* Step 1: Basic Information */}
               {currentStep === 1 && (
                 <div className="grid grid-cols-2 gap-4">
                   {/* Avatar Image and Upload */}
                   <div className="col-span-2">
-                    <label className="block text-sm font-medium mb-1">Avatar</label>
+                    <label className="block text-sm font-medium mb-1">
+                      Avatar <span className="text-red-500">*</span>
+                    </label>
+
                     {uploading && (
                       <p className="text-sm text-gray-500">Uploading...</p>
                     )}
@@ -731,7 +782,7 @@ const ManageAIAstrologer = () => {
 
                   {/* Name */}
                   <div>
-                    <label className="block text-sm font-medium mb-1">Name</label>
+                    <label className="block text-sm font-medium mb-1">Name <span className="text-red-500">*</span></label>
                     <input
                       type="text"
                       value={newUser.name || ""}
@@ -745,10 +796,11 @@ const ManageAIAstrologer = () => {
                   {/* Experience */}
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      Experience (years)
+                      Experience (years) <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
+                      min={0}
                       value={newUser.experience || ""}
                       onChange={(e) =>
                         setNewUser({
@@ -763,7 +815,7 @@ const ManageAIAstrologer = () => {
                   {/* Specialities */}
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      Specialities
+                      Specialities <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
@@ -780,15 +832,26 @@ const ManageAIAstrologer = () => {
 
                   {/* Rating */}
                   <div>
-                    <label className="block text-sm font-medium mb-1">Rating</label>
+                    <label className="block text-sm font-medium mb-1">Rating <span className="text-red-500">*</span></label>
                     <input
                       type="number"
+                      min={0}
+                      max={5}
                       value={newUser.rating || ""}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        if (e.target.value > 5 || e.target.value < 0) {
+                          toast.error("Rating must be between 0 to 5");
+                          setNewUser({
+                            ...newUser,
+                            rating: 0,
+                          })
+                          return
+                        }
                         setNewUser({
                           ...newUser,
                           rating: e.target.value,
                         })
+                      }
                       }
                       className="w-full p-2 border border-stroke rounded-md"
                     />
@@ -796,7 +859,7 @@ const ManageAIAstrologer = () => {
 
                   {/* Is Trending */}
                   <div>
-                    <label className="block text-sm font-medium mb-1">Is Trending</label>
+                    <label className="block text-sm font-medium mb-1">Is Trending? <span className="text-red-500">*</span></label>
                     <select
                       value={newUser.isFeatured ? "true" : "false"}
                       onChange={(e) =>
@@ -820,7 +883,7 @@ const ManageAIAstrologer = () => {
                   {/* Price Per Call Minute */}
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      Price Per Call Minute ($)
+                      Price Per Call Minute <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -838,7 +901,7 @@ const ManageAIAstrologer = () => {
                   {/* Price Per Video Call Minute */}
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      Price Per Video Call Minute ($)
+                      Price Per Video Call Minute <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -874,7 +937,7 @@ const ManageAIAstrologer = () => {
                   {/* Commission Per Chat Minute */}
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      Commission Per Chat Minute ($)
+                      Commission Per Chat Minute <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -892,7 +955,7 @@ const ManageAIAstrologer = () => {
                   {/* Commission Per Call Minute */}
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      Commission Per Call Minute ($)
+                      Commission Per Call Minute <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -910,7 +973,7 @@ const ManageAIAstrologer = () => {
                   {/* Commission Per Video Call Minute */}
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      Commission Per Video Call Minute ($)
+                      Commission Per Video Call Minute <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
@@ -932,7 +995,7 @@ const ManageAIAstrologer = () => {
                 <div className="grid grid-cols-2 gap-4">
                   {/* Verified */}
                   <div>
-                    <label className="block text-sm font-medium mb-1">Verified</label>
+                    <label className="block text-sm font-medium mb-1">is Verified ? <span className="text-red-500">*</span></label>
                     <select
                       value={newUser.isVerified ? "Yes" : "No"}
                       onChange={(e) =>
@@ -950,7 +1013,7 @@ const ManageAIAstrologer = () => {
 
                   {/* Gender */}
                   <div>
-                    <label className="block text-sm font-medium mb-1">Gender</label>
+                    <label className="block text-sm font-medium mb-1">Gender <span className="text-red-500">*</span></label>
                     <select
                       value={newUser.gender || ""}
                       onChange={(e) =>
@@ -998,7 +1061,11 @@ const ManageAIAstrologer = () => {
                 {currentStep < 3 && (
                   <button
                     type="button"
-                    onClick={() => setCurrentStep(currentStep + 1)}
+                    onClick={() => {
+                      if (validateCurrentStep(currentStep)) {
+                        setCurrentStep(currentStep + 1);
+                      }
+                    }}
                     className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
                   >
                     Next
