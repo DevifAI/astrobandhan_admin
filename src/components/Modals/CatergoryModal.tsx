@@ -91,9 +91,15 @@
 // export default CategoryModal;
 
 
+
 import React, { useEffect, useRef, useState } from "react";
 import { Category, NewCategory, CategoryModalProps } from "../../types/categoryTypes";
+import toast from "react-hot-toast";
+import axiosInstance from '../../utils/axiosInstance';
+import axios from "axios";
 
+
+const CLOUDINARY_CLOUD_NAME = "dlol2hjj8";
 
 const CameraIcon = () => (
   <svg
@@ -126,72 +132,99 @@ const CloseIcon = () => (
 const CategoryModal: React.FC<CategoryModalProps> = ({
   isOpen,
   onClose,
-  category,
-  onHandleSubmit,
-}) => {
-  const [formData, setFormData] = useState({
-    category_name: category?.category_name || '',
-    no_of_items: category?.no_of_items || 0,
-    image: category?.image || null, // Add image field
-  });
+  category
+}) =>
+   {
+    const [formData, setFormData] = useState({
+      category_name:  '',
+      totalItems: 0,
+      image: '', // Add image field
+    });
+  
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [preview, setPreview] = useState<string | null>(''); // Initialize with existing image if available
+  
+    console.log(category)
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [preview, setPreview] = useState<string | null>(
-    category?.image || null // Initialize with existing image if available
-  );
 
-  // Function to handle image selection
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setFormData({ ...formData, image: file }); // Update formData with the selected image file
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  // Function to remove selected image
-  const removeImage = () => {
-    setPreview(null);
-    setFormData({ ...formData, image: null }); // Remove image from formData
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    try {
-      const formDataToSubmit = new FormData();
-      formDataToSubmit.append('category_name', formData.category_name);
-      formDataToSubmit.append('no_of_items', formData.no_of_items.toString());
-
-      if (formData.image) {
-        formDataToSubmit.append('image', formData.image); // Append the image file
-      }
-
+    useEffect(() => {
       if (category) {
-        formDataToSubmit.append('_id', category._id); // Include the ID if editing
+        setFormData({
+          ...category,
+          totalItems : category.totalItems,
+          image: category.imageUrl || "", // Ensure image is always a string
+        });
+        setPreview(category.imageUrl || ""); // Provide a fallback empty string for preview
       }
+    }, [category]);
 
-      await onHandleSubmit(formDataToSubmit);
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+    // Handle image change (upload to Cloudinary)
+    const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        try {
+          // Create form data to send to Cloudinary
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("upload_preset", "admin_photos_user"); // Replace with your Cloudinary preset
+  
+          // Upload the image to Cloudinary
+          const response = await axios.post(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, formData);
+          const imageUrl = response.data.secure_url; // Get the URL of the uploaded image
+          console.log(imageUrl)
+          setPreview(imageUrl); 
+          setFormData((prevData) => ({ ...prevData, image: imageUrl })); // Store image URL in form data
+        } catch (err) {
+          setError("Image upload failed.");
+        }
+      }
+    };
+  
+    const removeImage = () => {
+      setPreview(null);
+      setFormData({ ...formData, image: '' }); // Remove image from formData
+    };
+  
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setLoading(true);
+      setError(null);
+    
+      try {
+        const formDataToSubmit = {
+          category_name: formData.category_name,
+          // no_of_items: formData.no_of_items,
+          image: formData.image || null, // Include the image URL (if available)
+        };
+    
+        // If the category is being edited, include its ID
+        // if (category) {
+        //   formDataToSubmit._id = category._id;
+        // }
+    
+        // Use axiosInstance to post data as JSON
+        await axiosInstance.post("/productCategory/createProductCategory", formDataToSubmit, {
+          headers: {
+            "Content-Type": "application/json", // Ensure content type is JSON
+          },
+        });
+    
+        toast.success("Category saved successfully!"); // Success notification
+        onClose();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "An error occurred");
+        toast.error("Something went wrong!"); // Error notification
+      } finally {
+        setLoading(false);
+      }
+    };
   return isOpen && (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 ">
   <div className="relative bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl w-full max-w-lg mt-20">
     <h2 className="text-3xl font-bold text-center mb-8 text-gray-900 dark:text-white">
-      {category ? 'Edit Category' : 'Add Category'}
+      {/* {category ? 'Edit Category' : 'Add Category'} */}
+      Add category
     </h2>
 
     {error && (
@@ -267,7 +300,7 @@ const CategoryModal: React.FC<CategoryModalProps> = ({
           </label>
           <input
             type="number"
-            value={formData.no_of_items}
+            value={formData.totalItems}
             disabled
             className="mt-1 block w-full py-2 px-4 border border-gray-300 rounded-lg shadow-sm bg-gray-100 text-gray-500 cursor-not-allowed text-lg dark:bg-gray-600 dark:border-gray-500 dark:text-gray-400"
             placeholder="Enter number of items"

@@ -37,7 +37,9 @@ const ChatCard = () => {
     setFilteredData(filtered);
   }, [searchTerm, chatData]);
 
-  const handleDelete = async (id) => {
+
+  const handleDelete = async (id: string) => {
+
     try {
       await axiosInstance.post('/admin/delete-astrologer-requests', { userId: id });
       setChatData((prevData) => prevData.filter((chat) => chat._id !== id));

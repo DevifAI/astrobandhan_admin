@@ -20,6 +20,7 @@ const ManageAIAstrologer = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref for storing the timeout ID
   const [currentStep, setCurrentStep] = useState(1)
+  const [inputValue, setInputValue] = useState("");
   const [newUser, setNewUser] = useState({
     name: "",
     avatar: "",
@@ -104,6 +105,17 @@ const ManageAIAstrologer = () => {
     setIsDeleteModalOpen(true); // Open the delete confirmation modal
   };
   // Handle delete button click
+
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && inputValue.trim()) {
+      setNewUser({
+        ...newUser,
+        specialities: [...newUser.specialities, inputValue.trim()],
+      });
+      setInputValue(""); // Clear the input after adding
+    }
+  };
 
 
   // Handle delete confirmation
@@ -219,34 +231,60 @@ const ManageAIAstrologer = () => {
   const handleAddAstrologerSubmit = async (e) => {
     e.preventDefault(); // Prevent default form submission behavior
 
+    if (newUser.password !== newUser.confirmPassword) {
+      toast.error("Password is incorrect")
+      return
+    }
+    if (newUser.gender === "") {
+      toast.error("Please choose Gender")
+      return
+    }
+    if (!newUser.isAvailable) {
+      toast.error("Please choose availability")
+      return
+    }
+
+    if (!newUser.isFeatured) {
+      toast.error("Please choose trending option")
+      return
+    }
+    if (!newUser.password) {
+      toast.error("Password is missing")
+      return
+    }
+    if (!newUser.isVerified) {
+      toast.error("Please choose verified options ")
+      return
+    }
     // Clean up the specialities array by removing empty strings
     const cleanedSpecialities = newUser.specialities.filter(speciality => speciality.trim() !== "");
 
     // Update the newUser object with the cleaned specialities array
     const updatedNewUser = { ...newUser, specialities: cleanedSpecialities };
+    console.log({ updatedNewUser })
 
-    try {
-      // Send the cleaned new astrologer data to the API
-      const response = await axiosInstance.post('/admin/signup/astrologer', updatedNewUser);
+    // try {
+    //   // Send the cleaned new astrologer data to the API
+    //   const response = await axiosInstance.post('/admin/signup/astrologer', updatedNewUser);
 
-      if (response.data.success) {
-        toast.success(response.data.message || "AI Astrologer added successfully!"); // Show success toast
-        setIsAddModalOpen(false); // Close the modal
+    //   if (response.data.success) {
+    //     toast.success(response.data.message || "AI Astrologer added successfully!"); // Show success toast
+    //     setIsAddModalOpen(false); // Close the modal
 
-        // Optionally, add the new astrologer to the state
-        const updatedUsers = [...allUsers, response.data.data];
-        setAllUsers(updatedUsers);
-        setFilteredUsers(updatedUsers);
-      } else {
-        toast.error("Something went wrong. Please try again."); // Show error toast
-      }
-    } catch (error) {
-      console.error("Error adding astrologer:", error);
-      toast.error("Something went wrong. Please try again."); // Show error toast
-    }
+    //     // Optionally, add the new astrologer to the state
+    //     const updatedUsers = [...allUsers, response.data.data];
+    //     setAllUsers(updatedUsers);
+    //     setFilteredUsers(updatedUsers);
+    //   } else {
+    //     toast.error("Something went wrong. Please try again."); // Show error toast
+    //   }
+    // } catch (error) {
+    //   console.error("Error adding astrologer:", error);
+    //   toast.error("Something went wrong. Please try again."); // Show error toast
+    // }
   };
 
-
+  console.log({ newUser })
   const validateCurrentStep = (step: any) => {
     switch (step) {
       case 1:
@@ -254,9 +292,13 @@ const ManageAIAstrologer = () => {
         if (
           !newUser.avatar ||
           !newUser.name ||
-          !newUser.experience ||
           newUser.specialities.length === 0 ||
-          newUser.rating === null
+          newUser.rating === null ||
+          newUser.experience === null ||
+          newUser.phone === null ||
+          isNaN(newUser.experience) || newUser.experience < 0 ||
+          isNaN(newUser.rating) || newUser.rating < 0 ||
+          !Array.isArray(newUser.specialities) || !newUser.specialities.every((s) => typeof s === "string")
         ) {
           toast.error("Please fill all required fields in Step 1.");
           return false;
@@ -271,7 +313,13 @@ const ManageAIAstrologer = () => {
           newUser.pricePerChatMinute === null ||
           newUser.chatCommission === null ||
           newUser.callCommission === null ||
-          newUser.videoCallCommission === null
+          newUser.videoCallCommission === null ||
+          isNaN(newUser.pricePerCallMinute) || newUser.pricePerCallMinute < 0 ||
+          isNaN(newUser.pricePerVideoCallMinute) || newUser.pricePerVideoCallMinute < 0 ||
+          isNaN(newUser.pricePerChatMinute) || newUser.pricePerChatMinute < 0 ||
+          isNaN(newUser.chatCommission) || newUser.chatCommission < 0 ||
+          isNaN(newUser.callCommission) || newUser.callCommission < 0 ||
+          isNaN(newUser.videoCallCommission) || newUser.videoCallCommission < 0
         ) {
           toast.error("Please fill all required fields in Step 2.");
           return false;
@@ -793,6 +841,24 @@ const ManageAIAstrologer = () => {
                     />
                   </div>
 
+                  {/* Phone */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Phone Number <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newUser.phone || ""}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (/^\d*$/.test(value) && value.length <= 10) { // Only allow digits
+                          setNewUser({ ...newUser, phone: value });
+                        }
+                      }}
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
                   {/* Experience */}
                   <div>
                     <label className="block text-sm font-medium mb-1">
@@ -805,30 +871,13 @@ const ManageAIAstrologer = () => {
                       onChange={(e) =>
                         setNewUser({
                           ...newUser,
-                          experience: e.target.value,
+                          experience: Number(e.target.value),
                         })
                       }
                       className="w-full p-2 border border-stroke rounded-md"
                     />
                   </div>
 
-                  {/* Specialities */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Specialities <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={newUser.specialities.join(", ") || ""}
-                      onChange={(e) =>
-                        setNewUser({
-                          ...newUser,
-                          specialities: e.target.value.split(", "),
-                        })
-                      }
-                      className="w-full p-2 border border-stroke rounded-md"
-                    />
-                  </div>
 
                   {/* Rating */}
                   <div>
@@ -839,7 +888,7 @@ const ManageAIAstrologer = () => {
                       max={5}
                       value={newUser.rating || ""}
                       onChange={(e) => {
-                        if (e.target.value > 5 || e.target.value < 0) {
+                        if (Number(e.target.value) > 5 || Number(e.target.value) < 0) {
                           toast.error("Rating must be between 0 to 5");
                           setNewUser({
                             ...newUser,
@@ -849,13 +898,65 @@ const ManageAIAstrologer = () => {
                         }
                         setNewUser({
                           ...newUser,
-                          rating: e.target.value,
+                          rating: Number(e.target.value),
                         })
                       }
                       }
                       className="w-full p-2 border border-stroke rounded-md"
                     />
                   </div>
+
+                  {/* Specialities */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Specialities <span className="text-red-500">*</span>
+                    </label>
+
+                    <input
+                      type="text"
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      className="w-full p-2 border border-stroke rounded-md"
+                      placeholder="Add a speciality"
+                    />
+
+
+                    <div className="relative">
+                      <label className="block text-sm font-medium mb-1">
+                        Specialities <span className="text-red-500">*</span>
+                      </label>
+                      <div
+                        className="flex flex-wrap gap-2 mb-2"
+                        style={{
+                          maxHeight: "80px", // Adjust the height as needed
+                          maxWidth: "100%", // Set the width, or use a fixed value like '300px'
+                          overflowY: "auto", // Enables vertical scrolling
+                          overflowX: "hidden", // Optional: Hides horizontal scrolling
+                        }}
+                      >
+                        {newUser.specialities.map((speciality, index) => (
+                          <div key={index} className="flex items-center bg-gray-200 p-2 rounded-md">
+                            <span>{speciality}</span>
+                            <button
+                              type="button"
+                              className="ml-2 text-red-500"
+                              onClick={() => {
+                                setNewUser({
+                                  ...newUser,
+                                  specialities: newUser.specialities.filter((item) => item !== speciality),
+                                });
+                              }}
+                            >
+                              &times;
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                  </div>
+
 
                   {/* Is Trending */}
                   <div>
@@ -870,6 +971,8 @@ const ManageAIAstrologer = () => {
                       }
                       className="w-full p-2 border border-stroke rounded-md"
                     >
+
+                      <option value="">Selct Options</option>
                       <option value="true">Yes</option>
                       <option value="false">No</option>
                     </select>
@@ -887,13 +990,17 @@ const ManageAIAstrologer = () => {
                     </label>
                     <input
                       type="number"
+                      min={0}
                       value={newUser.pricePerCallMinute}
-                      onChange={(e) =>
-                        setNewUser({
-                          ...newUser,
-                          pricePerCallMinute: e.target.value,
-                        })
-                      }
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        if (!isNaN(value) && value !== "") {
+                          setNewUser({
+                            ...newUser,
+                            pricePerCallMinute: value,
+                          });
+                        }
+                      }}
                       className="w-full p-2 border border-stroke rounded-md"
                     />
                   </div>
@@ -906,11 +1013,17 @@ const ManageAIAstrologer = () => {
                     <input
                       type="number"
                       value={newUser.pricePerVideoCallMinute}
-                      onChange={(e) =>
-                        setNewUser({
-                          ...newUser,
-                          pricePerVideoCallMinute: e.target.value,
-                        })
+                      min={0}
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        if (!isNaN(value) && value !== "") {
+                          setNewUser({
+                            ...newUser,
+                            pricePerVideoCallMinute: e.target.value,
+                          })
+                        }
+                      }
+
                       }
                       className="w-full p-2 border border-stroke rounded-md"
                     />
@@ -919,17 +1032,23 @@ const ManageAIAstrologer = () => {
                   {/* Price Per Chat Minute */}
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      Price Per Chat Minute ($)
+                      Price Per Chat Minute <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="number"
+                      min={0}
                       value={newUser.pricePerChatMinute}
-                      onChange={(e) =>
-                        setNewUser({
-                          ...newUser,
-                          pricePerChatMinute: e.target.value,
-                        })
-                      }
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        if (!isNaN(value) && value !== "") {
+                          setNewUser({
+                            ...newUser,
+                            pricePerChatMinute: e.target.value,
+                          })
+                        }
+                      }}
+
+
                       className="w-full p-2 border border-stroke rounded-md"
                     />
                   </div>
@@ -941,13 +1060,17 @@ const ManageAIAstrologer = () => {
                     </label>
                     <input
                       type="number"
+                      min={0}
                       value={newUser.chatCommission}
-                      onChange={(e) =>
-                        setNewUser({
-                          ...newUser,
-                          chatCommission: e.target.value,
-                        })
-                      }
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        if (!isNaN(value) && value !== "") {
+                          setNewUser({
+                            ...newUser,
+                            chatCommission: e.target.value,
+                          })
+                        }
+                      }}
                       className="w-full p-2 border border-stroke rounded-md"
                     />
                   </div>
@@ -960,12 +1083,16 @@ const ManageAIAstrologer = () => {
                     <input
                       type="number"
                       value={newUser.callCommission}
-                      onChange={(e) =>
-                        setNewUser({
-                          ...newUser,
-                          callCommission: e.target.value,
-                        })
-                      }
+                      min={0}
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        if (!isNaN(value) && value !== "") {
+                          setNewUser({
+                            ...newUser,
+                            callCommission: e.target.value,
+                          })
+                        }
+                      }}
                       className="w-full p-2 border border-stroke rounded-md"
                     />
                   </div>
@@ -977,13 +1104,18 @@ const ManageAIAstrologer = () => {
                     </label>
                     <input
                       type="number"
+                      min={0}
                       value={newUser.videoCallCommission}
-                      onChange={(e) =>
-                        setNewUser({
-                          ...newUser,
-                          videoCallCommission: e.target.value,
-                        })
-                      }
+
+                      onChange={(e) => {
+                        const value = Number(e.target.value);
+                        if (!isNaN(value) && value !== "") {
+                          setNewUser({
+                            ...newUser,
+                            videoCallCommission: e.target.value,
+                          })
+                        }
+                      }}
                       className="w-full p-2 border border-stroke rounded-md"
                     />
                   </div>
@@ -995,7 +1127,9 @@ const ManageAIAstrologer = () => {
                 <div className="grid grid-cols-2 gap-4">
                   {/* Verified */}
                   <div>
-                    <label className="block text-sm font-medium mb-1">is Verified ? <span className="text-red-500">*</span></label>
+                    <label className="block text-sm font-medium mb-1">
+                      Is Verified? <span className="text-red-500">*</span>
+                    </label>
                     <select
                       value={newUser.isVerified ? "Yes" : "No"}
                       onChange={(e) =>
@@ -1013,7 +1147,9 @@ const ManageAIAstrologer = () => {
 
                   {/* Gender */}
                   <div>
-                    <label className="block text-sm font-medium mb-1">Gender <span className="text-red-500">*</span></label>
+                    <label className="block text-sm font-medium mb-1">
+                      Gender <span className="text-red-500">*</span>
+                    </label>
                     <select
                       value={newUser.gender || ""}
                       onChange={(e) =>
@@ -1024,13 +1160,98 @@ const ManageAIAstrologer = () => {
                       }
                       className="w-full p-2 border border-stroke rounded-md"
                     >
+                      <option value="">Select Gender</option>
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
                       <option value="Other">Other</option>
                     </select>
                   </div>
+
+                  {/* Password */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Password <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={newUser.password || ""}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          password: e.target.value,
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Confirm Password <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      value={newUser.confirmPassword || ""}
+                      disabled={!newUser.password}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          confirmPassword: e.target.value,
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Available */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Available <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={newUser.isAvailable ? "True" : "False"}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          isAvailable: e.target.value === "True",
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    >
+                      <option value="True">True</option>
+                      <option value="False">False</option>
+                    </select>
+                  </div>
+
+                  {/* Languages (Multi-select) */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Languages <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      multiple
+                      value={newUser.languages || []}
+                      onChange={(e) =>
+                        setNewUser({
+                          ...newUser,
+                          languages: Array.from(e.target.selectedOptions, (option) => option.value),
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    >
+                      <option value="English">English</option>
+                      <option value="Spanish">Spanish</option>
+                      <option value="French">French</option>
+                      <option value="German">German</option>
+                      <option value="Chinese">Chinese</option>
+                      <option value="Japanese">Japanese</option>
+                      <option value="Hindi">Hindi</option>
+                    </select>
+                  </div>
                 </div>
               )}
+
 
               {/* Modal Footer */}
               <div className="flex justify-end mt-6 space-x-4">
@@ -1040,6 +1261,21 @@ const ManageAIAstrologer = () => {
                   onClick={() => {
                     setIsAddModalOpen(false);
                     setCurrentStep(1); // Reset step to 1
+                    setNewUser({
+                      name: "",
+                      avatar: "",
+                      specialities: [],
+                      experience: 0,
+                      isVerified: false,
+                      pricePerChatMinute: 0,
+                      pricePerCallMinute: 0,
+                      pricePerVideoCallMinute: 0,
+                      isFeatured: false,
+                      chatCommission: 0,
+                      callCommission: 0,
+                      videoCallCommission: 0,
+                      rating: 0,
+                    })
                   }}
                   className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
                 >
@@ -1084,8 +1320,8 @@ const ManageAIAstrologer = () => {
                 )}
               </div>
             </form>
-          </div>
-        </div>
+          </div >
+        </div >
       )}
       <Toaster />
     </>
