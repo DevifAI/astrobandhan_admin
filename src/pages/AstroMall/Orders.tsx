@@ -3,6 +3,7 @@ import Breadcrumb from "../../components/Breadcrumbs/Breadcrumb"
 
 import UserOne from "../../images/user/user-01.png";
 import axiosInstance from "../../utils/axiosInstance";
+import ReactPaginate from "react-paginate";
 
   
 const Orders = () => {
@@ -17,6 +18,7 @@ const Orders = () => {
     const [toDate, setToDate] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+     const [currentPage, setCurrentPage] = useState<number>(0);
   
   
     // console.log(orders)
@@ -75,6 +77,15 @@ const Orders = () => {
        useEffect(() => {
           fetchOrders();
         }, []);
+
+        const ITEMS_PER_PAGE = 10;
+        const offset = currentPage * ITEMS_PER_PAGE;
+        const currentOrders = orders.slice(offset, offset + ITEMS_PER_PAGE); // Slice orders for current page
+        const pageCount = Math.ceil(orders.length / ITEMS_PER_PAGE); // Calculate total pages
+      
+        const handlePageClick = ({ selected }: { selected: number }) => {
+          setCurrentPage(selected);
+        };
 
   return (
     <>
@@ -137,7 +148,7 @@ const Orders = () => {
             </tr>
           </thead>
           <tbody>
-            {orders.map((Item, key) => (
+            {currentOrders.map((Item, key) => (
               <tr
                 key={key}
                 className="text-center border-b border-gray-300 dark:border-strokedark"
@@ -179,6 +190,25 @@ const Orders = () => {
             ))}
           </tbody>
         </table>
+
+<div className="flex justify-center py-6">
+  <ReactPaginate
+    previousLabel={"Previous"}
+    nextLabel={"Next"}
+    pageCount={pageCount}
+    onPageChange={(event) => {
+      setCurrentPage(event.selected); // Ensure this updates the state correctly
+    }}
+    forcePage={currentPage} // Ensure the current page is highlighted
+    containerClassName={"flex space-x-2"}
+    pageClassName={"px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"}
+    activeClassName={"bg-blue-300 dark:bg-blue-400 text-white"} // Highlights active page
+    previousClassName={"px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"}
+    nextClassName={"px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"}
+    disabledClassName={"opacity-50 cursor-not-allowed"}
+  />
+</div>
+
       </div>
 
       {/* Modal */}

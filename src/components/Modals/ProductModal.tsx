@@ -2,6 +2,12 @@ import React, { useState, ChangeEvent, useEffect } from 'react';
 import { Product } from '../../types/Products';
 import axiosInstance from '../../utils/axiosInstance';
 import { Category } from '../../types/categoryTypes';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+
+const CLOUDINARY_CLOUD_NAME = "dlol2hjj8";
 
 interface ProductModalProps {
   product: Product | null;
@@ -31,22 +37,26 @@ const ProductModal: React.FC<ProductModalProps> = ({
     brand: '',
     weight: '',
     material: '',
-    in_stock: true,
+    // in_stock: true,
     contains: [],
+    imageUrl: '',
+    rating: 0,
+    isTrending: false,
   });
-
-  useEffect(() => {
-    if (product) {
-      setFormData(product);
-    }
-  }, [product]);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [image, setImage] = useState<string>('');
   const [newContainsItem, setNewContainsItem] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
 
-  // Fetch categories
+  useEffect(() => {
+    if (product) {
+      setFormData(product);
+      setImage(product.imageUrl || '');
+    }
+  }, [product]);
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -62,81 +72,145 @@ const ProductModal: React.FC<ProductModalProps> = ({
     fetchCategories();
   }, []);
 
-  // Handle input changes
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
+  
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'originalPrice' || name === 'displayPrice' 
-        ? Number(value || 0)
-        : name === 'category'
-        ? { 
-            _id: value,
-            category_name: categories.find(c => c._id === value)?.category_name || '',
-            createdAt: '',
-            updatedAt: '',
-            __v: 0
-          }
-        : value
+      [name]: 
+        // Convert specific fields to numbers
+        ['originalPrice', 'displayPrice', 'rating'].includes(name)
+        ? parseFloat(value) || 0 
+          : // Handle category as a nested object
+        name === 'category'
+          ? {
+              _id: value,
+              category_name: categories.find(c => c._id === value)?.category_name || '',
+              createdAt: '',
+              updatedAt: '',
+              __v: 0
+            }
+          : // Default case for other fields
+            value
     }));
   };
 
-  // Handle image file selection
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setImageFile(file);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setImage(event.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+      setUploading(true);
+      
+      const cloudinaryFormData = new FormData();
+      cloudinaryFormData.append('file', file);
+      cloudinaryFormData.append('upload_preset', 'admin_photos_user');
+  
+      try {
+        const cloudinaryResponse = await axios.post(
+          `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, 
+          cloudinaryFormData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          }
+        );
+      
+        const image = cloudinaryResponse.data.secure_url;
+        console.log(image)
+        setImage(image);
+        setFormData(prev => ({
+          ...prev,
+          imageUrl: image
+        }));
+      } catch (error) {
+        console.error('Cloudinary upload error:', error);
+      } finally {
+        setUploading(false);
+      }
     }
   };
 
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    const formDataToSubmit = new FormData();
-    
-    // Append all text fields
-    Object.entries(formData).forEach(([key, value]) => {
-      if (value !== null && value !== undefined) {
-        if (key === 'contains' && Array.isArray(value)) {
-          value.forEach((item, index) => {
-            formDataToSubmit.append(`contains[${index}]`, item);
-          });
-        } else if (key === 'category') {
-          formDataToSubmit.append('category', (value as Category)._id);
-        } else {
-          formDataToSubmit.append(key, String(value));
-        }
-      }
-    });
-
-    // Append image file
-    if (imageFile) {
-      formDataToSubmit.append('image', imageFile);
-    }
-
+  
     try {
-      const response = await axiosInstance.post('/product/createProduct', formDataToSubmit, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
+      const jsonDataToSubmit: any = {}; // Define your JSON object
+  
+      // Serialize form data into JSON
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          if (key === 'contains' && Array.isArray(value)) {
+            jsonDataToSubmit[key] = value.map((item) => String(item));
+          } else if (key === 'category') {
+            jsonDataToSubmit[key] = (value as Category)._id;
+          } else if (['originalPrice', 'displayPrice', 'rating'].includes(key)) {
+            // Ensure these fields are numbers
+            jsonDataToSubmit[key] = Number(value);
+          } else {
+            jsonDataToSubmit[key] = String(value);
+          }
         }
       });
-
-      onProductCreated(response.data);
+  
+      console.log({ jsonDataToSubmit });
+  
+      let response;
+  
+      // Check if product exists (e.g., check if there's a product._id)
+      if (product && product._id) {
+        // Call PATCH for update
+        response = await axiosInstance.patch(`/product/update/${product._id}`, jsonDataToSubmit, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+  
+        toast.success('Product updated successfully!');
+      } else {
+        // Call POST for create
+        response = await axiosInstance.post('/product/createProduct', jsonDataToSubmit, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+  
+        toast.success('Product created successfully!');
+      }
+  
+      // Reset form data after successful operation
+      setFormData({
+        productName: '',
+        productDescription: '',
+        category: {
+          _id: '',
+          category_name: '',
+          createdAt: '',
+          updatedAt: '',
+          __v: 0,
+        },
+        originalPrice: 0,
+        displayPrice: 0,
+        brand: '',
+        weight: '',
+        material: '',
+        contains: [],
+        imageUrl: '',
+        rating: 0,
+        isTrending: false,
+      });
+  
       onClose();
+      console.log('Response:', response.data); // Handle the response as needed
     } catch (error) {
-      console.error('Error creating product:', error);
+      console.error('Error:', error); // Handle errors
+      toast.error('An error occurred. Please try again.');
     }
   };
+  
 
-  // Add contains item
   const handleAddContainsItem = () => {
     if (newContainsItem.trim()) {
       setFormData(prev => ({
@@ -147,7 +221,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
     }
   };
 
-  // Remove contains item
   const handleRemoveContainsItem = (index: number) => {
     setFormData(prev => ({
       ...prev,
@@ -155,63 +228,73 @@ const ProductModal: React.FC<ProductModalProps> = ({
     }));
   };
 
+  const handleImageRemove = () => {
+    setImage('');
+    setImageFile(null);
+    setFormData(prev => ({
+      ...prev,
+      imageUrl: ''
+    }));
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 ">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
     <div className="w-full max-w-4xl mt-8 h-[80vh] bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-    <div className="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-600">
-      <h2 className="text-lg font-semibold dark:text-white">
-        {product ? `Edit Product - ${product.productName}` : 'Add Product'}
-      </h2>
+      <div className="flex justify-between items-center p-4 border-b border-gray-300 dark:border-gray-600">
+        <h2 className="text-lg font-semibold dark:text-white">
+          {product ? `Edit Product - ${product.productName}` : 'Add Product'}
+        </h2>
+        <button
+          onClick={onClose}
+          className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 w-full h-[90%]">
+        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+          {/* Image Upload Section */}
+          <div className="bg-gray-50 dark:bg-gray-900 p-6 border-b border-gray-200 dark:border-gray-700">
+          <div className="border-2 border-dashed rounded-lg p-4 text-center bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
+  {image || (product && product.image) ? (
+    <div className="relative">
+      <img
+        src={image || product?.image} // Use `image` or fallback to `product.image`
+        alt="Product Preview"
+        className="max-h-64 mx-auto rounded-lg"
+      />
       <button
-        onClick={onClose}
-        className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+        type="button"
+        onClick={handleImageRemove}
+        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
       >
-        ✕
+        ×
       </button>
     </div>
+  ) : (
+    <div>
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handleImageChange}
+        className="hidden"
+        id="imageUpload"
+        disabled={uploading}
+      />
+      <label
+        htmlFor="imageUpload"
+        className={`cursor-pointer text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 ${
+          uploading ? 'opacity-50' : ''
+        }`}
+      >
+        {uploading ? 'Uploading...' : 'Upload Product Image'}
+      </label>
+    </div>
+  )}
+</div>
 
-    <div className="flex-1 overflow-y-auto p-4 w-full h-[90%]">
-      <form onSubmit={handleSubmit} className="flex flex-col h-full">
-        {/* Image Upload Section - Always at Top */}
-        <div className="bg-gray-50 dark:bg-gray-900 p-6 border-b border-gray-200 dark:border-gray-700">
-          <div className="border-2 border-dashed rounded-lg p-4 text-center bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600">
-            {image ? (
-              <div className="relative">
-                <img 
-                  src={image} 
-                  alt="Product Preview" 
-                  className="max-h-64 mx-auto rounded-lg"
-                />
-                <button 
-                  type="button"
-                  onClick={() => {
-                    setImage('');
-                    setImageFile(null);
-                  }}
-                  className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
-                >
-                  ×
-                </button>
-              </div>
-            ) : (
-              <div>
-                <input 
-                  type="file" 
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden" 
-                  id="imageUpload"
-                />
-                <label 
-                  htmlFor="imageUpload" 
-                  className="cursor-pointer text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
-                >
-                  Upload Product Image
-                </label>
-              </div>
-            )}
           </div>
-        </div>
 
         {/* Main Content Grid */}
         <div className="grid md:grid-cols-2 gap-6 p-6">
@@ -267,7 +350,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
       id="originalPrice"
       name="originalPrice"
       placeholder="Original Price"
-      value={formData.originalPrice || ''}
+      value={formData.originalPrice || 0}
       onChange={handleChange}
       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
       required
@@ -287,7 +370,26 @@ const ProductModal: React.FC<ProductModalProps> = ({
       id="displayPrice"
       name="displayPrice"
       placeholder="Display Price"
-      value={formData.displayPrice || ''}
+      value={formData.displayPrice || 0}
+      onChange={handleChange}
+      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
+      required
+      min="0"
+    />
+  </div>
+  <div>
+    <label
+      htmlFor="rating"
+      className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+    >
+      Rating
+    </label>
+    <input
+      type="number"
+      id="rating"
+      name="rating"
+      placeholder="Rating"
+      value={formData.rating || 0}
       onChange={handleChange}
       className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"
       required

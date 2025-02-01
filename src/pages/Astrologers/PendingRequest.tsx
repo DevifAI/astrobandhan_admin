@@ -1,51 +1,37 @@
+import { useEffect, useState } from "react"
 import Breadcrumb from "../../components/Breadcrumbs/Breadcrumb"
 import UserOne from "../../images/user/user-01.png"
 import UserTwo from "../../images/user/user-02.png"
-import UserThree from "../../images/user/user-03.png"
-import UserFour from "../../images/user/user-04.png"
+import axiosInstance from "../../utils/axiosInstance"
+import toast from "react-hot-toast"
 
 
-
-const userData: AstrologerType[] = [
-    {
-      image: UserOne,
-      name: 'Pandit Ujjal Shastri',
-      contactNo: '123-456-7890',
-      gender: 'Male',
-      isVerified: false,
-      chatRequest: 5,
-      callRequest: 3,
-    },
-    {
-      image: UserTwo,
-      name: 'Jane Smith',
-      contactNo: '987-654-3210',
-      gender: 'Female',
-      isVerified: false,
-      chatRequest: 2,
-      callRequest: 1,
-    },
-    {
-      image: UserThree,
-      name: 'Alice Johnson',
-      contactNo: '456-789-0123',
-      gender: 'Female',
-      isVerified: false,
-      chatRequest: 10,
-      callRequest: 7,
-    },
-    {
-      image: UserFour,
-      name: 'Bob Brown',
-      contactNo: '321-654-9870',
-      gender: 'Male',
-      isVerified: false,
-      chatRequest: 0,
-      callRequest: 0,
-    },
-  ];
 
 const PendingRequest = () => {
+   const [chatData, setChatData] = useState([]);
+     const [modalVisible, setModalVisible] = useState(false);
+     const [modalData, setModalData] = useState(null);
+     const [successMessage, setSuccessMessage] = useState('');
+     const [errorMessage, setErrorMessage] = useState('');
+
+    // console.log(chatData)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axiosInstance.get<any>('/admin/pending-astrologer-requests');
+        const processedData = response.data.data.requests.map((request: any) => ({
+          ...request,
+          avatar: request.gender === 'male' ? UserOne : UserTwo,
+        }));
+        setChatData(processedData);
+      } catch (error: any) {
+        console.error('Error fetching astrologer requests:', error.response?.data || error.message);
+      }
+    };
+
+    fetchData();
+  }, []);
 
     function getStatusMessage(status: boolean) {
         if (status === true) {
@@ -54,6 +40,42 @@ const PendingRequest = () => {
           return <p className="text-danger">Unverified</p>;
         }
       }
+
+      const handleVerifyClick = (chat: any) => {
+        setModalData(chat);
+        setModalVisible(true);
+      };
+    
+      const handleCloseModal = () => {
+        setModalVisible(false);
+        setModalData(null);
+      };
+
+      const handleDelete = async (id: string) => {
+        try {
+          // Send DELETE request to remove the astrologer request
+          const response = await axiosInstance.post('/admin/delete-astrologer-requests', {
+            userId: id,
+          });
+    
+          // Remove the deleted request from the state
+          setChatData(prevData => prevData.filter(chat => chat._id !== id));
+    
+          // Show success message
+          toast.success("Astrologer Deleted Successfully", {
+            position: 'top-center',
+            duration: 3000, // Automatically close the toast after 3 seconds
+          });
+          setErrorMessage('');
+        } catch (error: any) {
+          // Show error message if the deletion fails
+          toast.error("Error deleting astrologer request", {
+            position: 'top-center',
+            duration: 3000, // Automatically close the toast after 3 seconds
+          });
+          setSuccessMessage('');
+        }
+      };
 
     return (
         <>
@@ -95,7 +117,7 @@ const PendingRequest = () => {
                 </div>
               </form>
             </div> 
-    
+{/*     
             <div className="flex items-center justify-center gap-2">
                 <button
                    className="rounded-md bg-blue-300 px-2 py-1 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 dark:bg-blue-400 dark:hover:bg-blue-500 dark:focus:ring-blue-300"
@@ -112,7 +134,7 @@ const PendingRequest = () => {
                    >
                   PDF
                   </button>
-            </div>
+            </div> */}
     
           </div>
       <div className="grid grid-cols-2 sm:grid-cols-6 md:grid-cols-8 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5">
@@ -129,7 +151,7 @@ const PendingRequest = () => {
           <p className="font-medium text-center">Gender</p>
         </div>
         <div className="flex items-center justify-center col-span-1">
-          <p className="font-medium text-center">Total Request</p>
+          <p className="font-medium text-center">Experience</p>
         </div>
         <div className="flex items-center justify-center col-span-2 sm:col-span-2">
           <p className="font-medium text-center">Satus</p>
@@ -140,24 +162,24 @@ const PendingRequest = () => {
       </div>
     
       {/* Table Body */}
-      {userData.map((user, key) => (
+      {chatData.map((user, key) => (
         <div
           className="grid grid-cols-2 sm:grid-cols-6 md:grid-cols-8 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5"
           key={key}
         >
           <div className="flex items-center col-span-2 sm:col-span-2">
             <div className="flex gap-4 justify-center items-center">
-              <img src={user.image} alt="User Profile" className="h-12.5 w-12.5 rounded-full" />
+              <img src={user.avatar} alt="User Profile" className="h-12.5 w-12.5 rounded-full" />
               <p className="text-sm text-black dark:text-white">{user.name}</p>
             </div>
           </div>
           <div className="flex items-center justify-center col-span-1">
-            <p className="text-sm text-black dark:text-white">{user.contactNo}</p>
+            <p className="text-sm text-black dark:text-white">{user.phoneNumber}</p>
           </div>
           <div className="flex items-center justify-center col-span-1 sm:col-span-1">
             <p className="text-sm text-black dark:text-white">{user.gender}</p>
           </div>
-          <div className="flex items-center justify-center col-span-1">
+          {/* <div className="flex items-center justify-center col-span-1">
             <p className="text-sm text-black dark:text-white flex items-center justify-center gap-1">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-4">
   <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
@@ -167,13 +189,22 @@ const PendingRequest = () => {
   <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 0 1 1.037-.443 48.282 48.282 0 0 0 5.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
 </svg> {user.chatRequest}
  </p>
+          </div> */}
+         <div className="flex items-center justify-center col-span-1 sm:col-span-1">
+            <p className="text-sm text-black dark:text-white">{user.experience}</p>
           </div>
+
           <div className="flex items-center justify-center col-span-2">
-            <p className="text-md text-black dark:text-white">{getStatusMessage(user.isVerified)}</p>
+            <p className="text-md text-black dark:text-white">{getStatusMessage(user.isApproved)}</p>
           </div>
           <div className="flex items-center justify-center col-span-1 space-x-3.5">
                       <div className="flex items-center space-x-3.5">
-                        <button className="hover:text-primary">
+                        <button 
+                         onClick={(e) => {
+                          e.preventDefault();
+                          handleVerifyClick(user);
+                        }}
+                        className="hover:text-primary">
                           <svg
                             className="fill-current"
                             width="18"
@@ -192,7 +223,12 @@ const PendingRequest = () => {
                             />
                           </svg>
                         </button>
-                        <button className="hover:text-primary">
+                        <button 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleDelete(user._id); 
+                        }}
+                        className="hover:text-primary">
                           <svg
                             className="fill-current"
                             width="18"
@@ -219,18 +255,60 @@ const PendingRequest = () => {
                             />
                           </svg>
                         </button>
-                        <button className="hover:text-primary">
+                        {/* <button className="hover:text-primary">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" className="size-5">
       <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
     </svg>
-                        </button>
+                        </button> */}
                       </div>  
           </div>
         </div>
       ))}
     </div>
     
-    
+    {modalVisible  && 
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 mt-8">
+      <div className="relative bg-white p-6 rounded-lg shadow-xl w-full max-w-lg">
+        <button
+          onClick={handleCloseModal}
+          className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 focus:outline-none"
+          aria-label="Close"
+        >
+          ✖
+        </button>
+
+        <div className="flex flex-col items-center space-y-4">
+          <img
+            src={modalData?.avatar}
+            alt={modalData.name}
+            className="w-24 h-24 rounded-full object-cover"
+          />
+          <h2 className="text-2xl font-semibold text-gray-800">{modalData.name}</h2>
+          <p className="text-gray-600">{modalData.bio}</p>
+        </div>
+
+        <div className="mt-6 space-y-2">
+          <p className="text-gray-800"><strong>Phone:</strong> {modalData.phoneNumber}</p>
+          <p className="text-gray-800"><strong>Gender:</strong> {modalData.gender}</p>
+          <p className="text-gray-800"><strong>Experience:</strong> {modalData.experience} years</p>
+          <p className="text-gray-800"><strong>City:</strong> {modalData.city}</p>
+          <p className="text-gray-800"><strong>State:</strong> {modalData.state}</p>
+          <p className="text-gray-800"><strong>Language:</strong> {modalData.language.name}</p>
+          <p className="text-gray-800"><strong>Approved:</strong> {modalData.isApproved ? "Yes" : "No"}</p>
+          <p className="text-gray-800"><strong>Created At:</strong> {new Date(modalData.createdAt).toLocaleDateString()}</p>
+          {/* <p className="text-gray-800"><strong>Updated At:</strong> {new Date(modalData.updatedAt).toLocaleDateString()}</p> */}
+        </div>
+
+        <div className="mt-6 text-right">
+          <button
+            onClick={handleCloseModal}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>}
     
         </>
       )

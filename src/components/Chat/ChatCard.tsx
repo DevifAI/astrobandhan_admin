@@ -40,6 +40,32 @@ const ChatCard = () => {
     setModalData(null);
   };
 
+  // const handleDelete = async (id: string) => {
+  //   try {
+  //     // Send DELETE request to remove the astrologer request
+  //     const response = await axiosInstance.post('/admin/delete-astrologer-requests', {
+  //       userId: id,
+  //     });
+
+  //     // Remove the deleted request from the state
+  //     setChatData(prevData => prevData.filter(chat => chat._id !== id));
+
+  //     // Show success message
+  //     toast.success("Astrologer Deleted Successfully", {
+  //       position: 'top-center',
+  //       duration: 3000, // Automatically close the toast after 3 seconds
+  //     });
+  //     setErrorMessage('');
+  //   } catch (error: any) {
+  //     // Show error message if the deletion fails
+  //     toast.error("Error deleting astrologer request", {
+  //       position: 'top-center',
+  //       duration: 3000, // Automatically close the toast after 3 seconds
+  //     });
+  //     setSuccessMessage('');
+  //   }
+  // };
+
   const handleDelete = async (id: string) => {
     try {
       // Send DELETE request to remove the astrologer request

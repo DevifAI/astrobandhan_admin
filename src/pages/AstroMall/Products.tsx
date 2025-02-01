@@ -1,91 +1,101 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Breadcrumb from '../../components/Breadcrumbs/Breadcrumb';
 import { Product } from '../../types/Products.ts';
 import ProductModal from '../../components/Modals/ProductModal.tsx';
-
+import { ToastContainer } from 'react-toastify';
 import UserOne from '../../images/user/user-01.png';
 import axiosInstance from '../../utils/axiosInstance.ts';
 import axios from 'axios';
+import ReactPaginate from "react-paginate";
+import toast from 'react-hot-toast';
+import { Category } from '../../types/categoryTypes.ts';
 
-const categories = [
-  { value: "", label: "Search by Category" },
-  { value: "electronics", label: "Electronics" },
-  { value: "books", label: "Books" },
-  { value: "fashion", label: "Fashion" },
-  { value: "home", label: "Home & Kitchen" },
-  { value: "sports", label: "Sports & Outdoors" },
-];
+const ITEMS_PER_PAGE = 10;
 
 const Products: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [showModal, setShowModal] = useState<boolean>(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [showModal, setShowModal] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [searchQuery, setSearchQuery] = useState<string>(''); // Add search query state
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState('');
 
-  // console.log(products)
-  const handleAddProduct = async (newProduct: Product) => {
+  // Memoized fetch functions
+  const fetchCategories = useCallback(async () => {
     try {
-      const response = await addProduct(newProduct);
-      setProducts([...products, response.data]);
-      setShowModal(false);
+      const response = await axiosInstance.get('/productCategory');
+      if (Array.isArray(response.data.data)) {
+        setCategories(response.data.data);
+      }
     } catch (error) {
-      console.error('Error adding product:', error);
-      setError('Failed to add product. Please try again later.');
+      console.error('Error fetching categories:', error);
     }
-  };
+  }, []);
 
-  const handleEditProduct = (updatedProduct: Product) => {
-    setProducts((prevProducts) =>
-      prevProducts.map((product) =>
-        product._id === updatedProduct._id ? updatedProduct : product
-      )
-    );
-    setEditProduct(null);
-    setShowModal(false);
-  };
-
-  const fetchProducts = async (query: string = '') => {
+  const fetchProducts = useCallback(async (query: string = '', categoryId: string = '') => {
     setLoading(true);
     try {
-      const response = await axiosInstance.get(
-        `/product${query && `/search?productName=${query}`}`,
-      );
+      const endpoint = categoryId 
+        ? `/product/filter/${categoryId}/isAll`
+        : query 
+          ? `/product/search?productName=${query}`
+          : '/product';
+
+      const response = await axiosInstance.get(endpoint);
+      
       if (Array.isArray(response.data.data)) {
         setProducts(response.data.data);
+        setError(null);
       } else {
-        setError('Unexpected response format');
+        throw new Error('Unexpected response format');
       }
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        setError(
-          error.response?.data?.message ||
-            'Failed to fetch products. Please try again later.',
-        );
-      } else {
-        setError('An unexpected error occurred. Please try again later.');
-      }
+      setError(error instanceof Error ? error.message : 'An unexpected error occurred');
       console.error('Error fetching products:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchProducts();
   }, []);
 
-  const handleSearch: React.MouseEventHandler<HTMLButtonElement> = () => {
-    fetchProducts(searchQuery);
-  };
+  // Delete product handler
+  const handleDeleteProduct = useCallback(async (id: string) => {
+    if (!id || !window.confirm("Are you sure you want to delete this product?")) return;
 
-  const addProduct = async (product: Product) => {
-    return axiosInstance.post(
-      '/product/createProduct',
-      product,
-    );
-  };
+    try {
+      await axiosInstance.delete(`/product/delete/${id}`);
+      fetchProducts(searchQuery, selectedCategory);
+      toast.success("Product deleted successfully.");
+    } catch (error) {
+      console.error("Error deleting product:", error);
+      toast.error("Failed to delete the product. Please try again.");
+    }
+  }, [fetchProducts, searchQuery, selectedCategory]);
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchCategories();
+    fetchProducts();
+  }, [fetchCategories, fetchProducts]);
+
+  // Search debouncing effect
+  useEffect(() => {
+    const debounceTimer = setTimeout(() => {
+      fetchProducts(searchQuery, selectedCategory);
+    }, 500);
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery, fetchProducts, selectedCategory]);
+
+  // Pagination calculations
+  const offset = currentPage * ITEMS_PER_PAGE;
+  const currentProducts = products.slice(offset, offset + ITEMS_PER_PAGE);
+  const pageCount = Math.ceil(products.length / ITEMS_PER_PAGE);
+
+  // console.log(currentProducts)
+  
 
   return (
     <>
@@ -121,21 +131,29 @@ const Products: React.FC = () => {
       </button>
 
       <input
-        type="text"
-        placeholder="Type to search..."
-        className="w-full bg-transparent pl-9 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:text-white dark:bg-dark dark:border-gray-600"
-      />
-    </div>
+                    type="text"
+                    placeholder="Type to search..."
+                    className="w-full bg-transparent pl-9 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:text-white dark:bg-dark dark:border-gray-600"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
 
     {/* Category Dropdown */}
     <div className="w-[50%]">
       <select
+        value={selectedCategory} // Set the selected category here
+        onChange={(e) => {
+          setSelectedCategory(e.target.value);
+          fetchProducts(searchQuery, e.target.value); // Fetch products based on the selected category
+        }}
         name="category"
         className="w-full bg-transparent pl-3 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:text-white dark:bg-dark dark:border-gray-600"
       >
+        <option value="">Select Category</option>
         {categories.map((category) => (
-          <option key={category.value} value={category.value} className='dark:text-black dark:bg-dark'>
-            {category.label}
+          <option key={category._id} value={category._id} className='dark:text-black dark:bg-dark'>
+            {category.category_name}
           </option>
         ))}
       </select>
@@ -161,7 +179,7 @@ const Products: React.FC = () => {
         ) : (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-6 md:grid-cols-8 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5">
-              <div className="flex items-center px-2 col-span-1 sm:col-span-1">
+              <div className="flex items-center px-2 col-span-1 sm:col-span-2">
                 <p className="font-medium text-center">Product</p>
               </div>
               <div className="flex items-center justify-center col-span-1 sm:col-span-2">
@@ -176,21 +194,21 @@ const Products: React.FC = () => {
               <div className="flex items-center justify-center col-span-1 sm:col-span-1">
                 <p className="font-medium text-center">Stock</p>
               </div>
-              <div className="flex items-center justify-center col-span-1">
+              {/* <div className="flex items-center justify-center col-span-1">
                 <p className="font-medium text-center">No. Of Stock</p>
-              </div>
+              </div> */}
               <div className="flex items-center justify-center col-span-1 space-x-3.5">
                 <p className="font-medium text-center">Actions</p>
               </div>
             </div>
 
             {/* Table Body */}
-            {products.map((product) => (
+            {currentProducts.map((product) => (
               <div
                 className="grid grid-cols-2 sm:grid-cols-6 md:grid-cols-8 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5"
                 key={product._id}
               >
-                <div className="flex items-center col-span-1 sm:col-span-1">
+                <div className="flex items-center col-span-1 sm:col-span-2">
                   <div className="flex gap-4 justify-center items-center">
                     <img
                       src={product.image}
@@ -202,14 +220,14 @@ const Products: React.FC = () => {
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center justify-center col-span-2">
+                {/* <div className="flex items-center justify-center col-span-2">
                   <p className="text-sm text-black dark:text-white">
                     {product.brand}
                   </p>
-                </div>
-                <div className="flex items-center justify-center col-span-1 sm:col-span-1">
+                </div> */}
+                <div className="flex items-center justify-center col-span-1 sm:col-span-2">
                   <p className="text-sm text-black dark:text-white">
-                    {product.category.category_name}
+                  {selectedCategory ? JSON.stringify(product.category) : product.category?.category_name }
                   </p>
                 </div>
                 <div className="flex items-center justify-center col-span-1 sm:col-span-1">
@@ -257,7 +275,10 @@ const Products: React.FC = () => {
                       />
                     </svg>
                   </button>
-                  <button className="hover:text-primary">
+                  <button 
+                  className="hover:text-primary"
+                  onClick={() => handleDeleteProduct(product._id)}
+                  >
                     <svg
                       className="fill-current"
                       width="18"
@@ -279,6 +300,23 @@ const Products: React.FC = () => {
                 </div>
               </div>
             ))}
+            <div className="flex justify-center py-6">
+  <ReactPaginate
+    previousLabel={"Previous"}
+    nextLabel={"Next"}
+    pageCount={pageCount}
+    onPageChange={(event) => {
+      setCurrentPage(event.selected); // Ensure this updates the state correctly
+    }}
+    forcePage={currentPage} // Ensure the current page is highlighted
+    containerClassName={"flex space-x-2"}
+    pageClassName={"px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"}
+    activeClassName={"bg-blue-300 dark:bg-blue-400 text-white"} // Highlights active page
+    previousClassName={"px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"}
+    nextClassName={"px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"}
+    disabledClassName={"opacity-50 cursor-not-allowed"}
+  />
+</div>
           </>
         )}
         {/* Add/Edit Product Modal */}
@@ -289,6 +327,9 @@ const Products: React.FC = () => {
             onProductCreated={Products}
           />
         )}
+
+<ToastContainer />
+
       </div>
     </>
   );
