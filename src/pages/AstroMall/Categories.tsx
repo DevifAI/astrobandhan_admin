@@ -17,26 +17,28 @@ const Categories = () => {
   const [error, setError] = useState<string | null>(null);
   const [dateError, setDateError] = useState<string | null>(null);
 
-      
+
   // console.log(categories);
 
-const handleDateChange = (field: "from" | "to", value: string) => {
-  if (field === "from") {
-    setFromDate(value);
-    if (toDate && new Date(value) > new Date(toDate)) {
-      setDateError("The 'From' date cannot be later than the 'To' date.");
+  const handleDateChange = (field: "from" | "to", value: string) => {
+    if (field === "from") {
+      setFromDate(value);
+      if (toDate && new Date(value) > new Date(toDate)) {
+        setDateError("The 'From' date cannot be later than the 'To' date.");
+      } else {
+        setDateError(null);
+      }
     } else {
-      setDateError(null);
+      setToDate(value);
+      if (fromDate && new Date(fromDate) > new Date(value)) {
+        setDateError("The 'To' date cannot be earlier than the 'From' date.");
+      } else {
+        setDateError(null);
+      }
     }
-  } else {
-    setToDate(value);
-    if (fromDate && new Date(fromDate) > new Date(value)) {
-      setDateError("The 'To' date cannot be earlier than the 'From' date.");
-    } else {
-      setDateError(null);
-    }
-  }
-};
+  };
+
+  console.log({ selectedCategory })
 
   // Fetch categories
   const fetchCategories = async () => {
@@ -45,7 +47,7 @@ const handleDateChange = (field: "from" | "to", value: string) => {
       const response = await axiosInstance.get('/productCategory');
       if (Array.isArray(response.data.data)) {
         setCategories(response.data.data);
-            }
+      }
     } catch (error: any) {
       setError(
         error.response?.data?.message || 'Failed to fetch categories'
@@ -58,23 +60,23 @@ const handleDateChange = (field: "from" | "to", value: string) => {
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+  }, [isModalOpen]);
 
   // Handle adding new category
   const handleAddCategory = async (categoryData: NewCategory) => {
     try {
       const response = await axiosInstance.post('/productCategory/createProductCategory', {
         category_name: categoryData.category_name,
-      no_of_items: categoryData.no_of_items
-    });
-    setCategories([...categories, response.data]);
-    setIsModalOpen(false);
-    fetchCategories();
-  } catch (error: any) {
-    console.error('Error adding category:', error);
-    throw new Error(error.response?.data?.message || 'Failed to add category');
-  }
-};
+        no_of_items: categoryData.no_of_items
+      });
+      setCategories([...categories, response.data]);
+      setIsModalOpen(false);
+      fetchCategories();
+    } catch (error: any) {
+      console.error('Error adding category:', error);
+      throw new Error(error.response?.data?.message || 'Failed to add category');
+    }
+  };
 
   // Handle updating category
   const handleUpdateCategory = async (categoryData: NewCategory & { _id: string }) => {
@@ -83,7 +85,7 @@ const handleDateChange = (field: "from" | "to", value: string) => {
         category_name: categoryData.category_name,
         no_of_items: categoryData.no_of_items
       });
-      setCategories(categories.map(cat => 
+      setCategories(categories.map(cat =>
         cat._id === categoryData._id ? response.data : cat
       ));
       setIsModalOpen(false);
@@ -118,12 +120,12 @@ const handleDateChange = (field: "from" | "to", value: string) => {
     if (!fromDate && !toDate) {
       return categories; // No filters applied
     }
-  
+
     return categories.filter((category) => {
       const categoryDate = new Date(category.createdAt); // Ensure `createdAt` exists in your data
       const from = fromDate ? new Date(fromDate) : null;
       const to = toDate ? new Date(toDate) : null;
-  
+
       return (
         (!from || categoryDate >= from) &&
         (!to || categoryDate <= to)
@@ -138,39 +140,39 @@ const handleDateChange = (field: "from" | "to", value: string) => {
       <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
         <div className="py-6 px-4 md:px-6 xl:px-7.5 flex justify-between items-center">
           <div className="flex items-center gap-4">
-          <div className="flex gap-3 items-center justify-center">
-      <label
-        htmlFor="fromDate"
-        className="text-md font-medium text-gray-600 dark:text-gray-300"
-      >
-        From
-      </label>
-      <input
-        type="date"
-        id="fromDate"
-        value={fromDate}
-        onChange={(e) => handleDateChange("from", e.target.value)}
-        className="w-full bg-transparent px-4 py-2 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 dark:text-white dark:border-gray-700 dark:focus:ring-blue-300"
-      />
-    </div>
+            <div className="flex gap-3 items-center justify-center">
+              <label
+                htmlFor="fromDate"
+                className="text-md font-medium text-gray-600 dark:text-gray-300"
+              >
+                From
+              </label>
+              <input
+                type="date"
+                id="fromDate"
+                value={fromDate}
+                onChange={(e) => handleDateChange("from", e.target.value)}
+                className="w-full bg-transparent px-4 py-2 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 dark:text-white dark:border-gray-700 dark:focus:ring-blue-300"
+              />
+            </div>
 
-    <div className="flex gap-3 items-center justify-center">
-      <label
-        htmlFor="toDate"
-        className="text-md font-medium text-gray-600 dark:text-gray-300"
-      >
-        To
-      </label>
-      <input
-        type="date"
-        id="toDate"
-        value={toDate}
-        onChange={(e) => handleDateChange("to", e.target.value)}
-        className="w-full bg-transparent px-4 py-2 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 dark:text-white dark:border-gray-700 dark:focus:ring-blue-300"
-      />
-    </div>
+            <div className="flex gap-3 items-center justify-center">
+              <label
+                htmlFor="toDate"
+                className="text-md font-medium text-gray-600 dark:text-gray-300"
+              >
+                To
+              </label>
+              <input
+                type="date"
+                id="toDate"
+                value={toDate}
+                onChange={(e) => handleDateChange("to", e.target.value)}
+                className="w-full bg-transparent px-4 py-2 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400 dark:text-white dark:border-gray-700 dark:focus:ring-blue-300"
+              />
+            </div>
           </div>
-  
+
           <div className="flex items-center justify-center gap-2">
             <button
               className="rounded-md bg-blue-300 px-2 py-1 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 dark:bg-blue-400 dark:hover:bg-blue-500 dark:focus:ring-blue-300"
@@ -180,7 +182,7 @@ const handleDateChange = (field: "from" | "to", value: string) => {
             </button>
           </div>
         </div>
-  
+
         {/* Table Headers */}
         <div className="grid grid-cols-8 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5">
           <div className="flex items-center justify-center col-span-2">
@@ -196,11 +198,11 @@ const handleDateChange = (field: "from" | "to", value: string) => {
             <p className="font-medium">Actions</p>
           </div>
         </div>
-  
+
         {/* Table Body */}
         {dateError && (
-      <p className="text-red-500 text-sm font-medium">{dateError}</p>
-    )}
+          <p className="text-red-500 text-sm font-medium">{dateError}</p>
+        )}
         {loading ? (
           <div className="text-center py-4">Loading...</div>
         ) : error ? (
@@ -220,12 +222,12 @@ const handleDateChange = (field: "from" | "to", value: string) => {
                   />
                 ) : (
                   <div className="w-12 h-12 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
                       className="h-6 w-6 text-gray-400"
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
                       strokeWidth="2"
                     >
                       <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
@@ -235,19 +237,19 @@ const handleDateChange = (field: "from" | "to", value: string) => {
                   </div>
                 )}
               </div>
-              
+
               <div className="flex items-center justify-center col-span-2">
                 <p className="text-md text-black dark:text-white">
                   {category.category_name}
                 </p>
               </div>
-              
+
               <div className="flex items-center justify-center col-span-2">
                 <p className="text-md text-black dark:text-white">
                   {category.totalItems}
                 </p>
               </div>
-              
+
               <div className="flex items-center justify-center gap-2 col-span-2">
                 <button
                   className="rounded-md bg-blue-300 px-3 py-1 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 dark:bg-blue-400 dark:hover:bg-blue-500 dark:focus:ring-blue-300"
@@ -266,7 +268,7 @@ const handleDateChange = (field: "from" | "to", value: string) => {
           ))
         )}
       </div>
-  
+
       {isModalOpen && (
         <CategoryModal
           isOpen={isModalOpen}

@@ -34,32 +34,31 @@ const Products: React.FC = () => {
       console.error('Error fetching categories:', error);
     }
   }, []);
-
   const fetchProducts = useCallback(async (query: string = '', categoryId: string = '') => {
     setLoading(true);
     try {
-      const endpoint = categoryId 
+      const endpoint = categoryId
         ? `/product/filter/${categoryId}/isAll`
-        : query 
+        : query
           ? `/product/search?productName=${query}`
           : '/product';
 
       const response = await axiosInstance.get(endpoint);
-      
+
       if (Array.isArray(response.data.data)) {
-        setProducts(response.data.data);
+        setProducts(response.data.data.reverse());
         setError(null);
       } else {
         throw new Error('Unexpected response format');
       }
     } catch (error) {
+      console.log({ error })
       setError(error instanceof Error ? error.message : 'An unexpected error occurred');
       console.error('Error fetching products:', error);
     } finally {
       setLoading(false);
     }
   }, []);
-
   // Delete product handler
   const handleDeleteProduct = useCallback(async (id: string) => {
     if (!id || !window.confirm("Are you sure you want to delete this product?")) return;
@@ -78,7 +77,7 @@ const Products: React.FC = () => {
   useEffect(() => {
     fetchCategories();
     fetchProducts();
-  }, [fetchCategories, fetchProducts]);
+  }, [fetchCategories, fetchProducts, showModal]);
 
   // Search debouncing effect
   useEffect(() => {
@@ -95,7 +94,7 @@ const Products: React.FC = () => {
   const pageCount = Math.ceil(products.length / ITEMS_PER_PAGE);
 
   // console.log(currentProducts)
-  
+
 
   return (
     <>
@@ -104,33 +103,33 @@ const Products: React.FC = () => {
         {/* Header Section */}
         <div className="py-6 px-4 md:px-6 xl:px-7.5 flex flex-col md:flex-row justify-between items-center">
           <div className='w-[60%]'>
-          <form action="#" method="POST">
-        <div className="flex gap-4">
-    {/* Search Input */}
-    <div className="relative w-full">
-      <button className="absolute left-0 top-1/2 -translate-y-1/2 pl-2">
-        <svg
-          className="fill-body hover:fill-primary dark:fill-bodydark dark:hover:fill-primary"
-          width="20"
-          height="20"
-          viewBox="0 0 20 20"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M9.16666 3.33332C5.945 3.33332 3.33332 5.945 3.33332 9.16666C3.33332 12.3883 5.945 15 9.16666 15C12.3883 15 15 12.3883 15 9.16666C15 5.945 12.3883 3.33332 9.16666 3.33332ZM1.66666 9.16666C1.66666 5.02452 5.02452 1.66666 9.16666 1.66666C13.3088 1.66666 16.6667 5.02452 16.6667 9.16666C16.6667 13.3088 13.3088 16.6667 9.16666 16.6667C5.02452 16.6667 1.66666 13.3088 1.66666 9.16666Z"
-          />
-          <path
-            fillRule="evenodd"
-            clipRule="evenodd"
-            d="M13.2857 13.2857C13.6112 12.9603 14.1388 12.9603 14.4642 13.2857L18.0892 16.9107C18.4147 17.2362 18.4147 17.7638 18.0892 18.0892C17.7638 18.4147 17.2362 18.4147 16.9107 18.0892L13.2857 14.4642C12.9603 14.1388 12.9603 13.6112 13.2857 13.2857Z"
-          />
-        </svg>
-      </button>
+            <form action="#" method="POST">
+              <div className="flex gap-4">
+                {/* Search Input */}
+                <div className="relative w-full">
+                  <button className="absolute left-0 top-1/2 -translate-y-1/2 pl-2">
+                    <svg
+                      className="fill-body hover:fill-primary dark:fill-bodydark dark:hover:fill-primary"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        clipRule="evenodd"
+                        d="M9.16666 3.33332C5.945 3.33332 3.33332 5.945 3.33332 9.16666C3.33332 12.3883 5.945 15 9.16666 15C12.3883 15 15 12.3883 15 9.16666C15 5.945 12.3883 3.33332 9.16666 3.33332ZM1.66666 9.16666C1.66666 5.02452 5.02452 1.66666 9.16666 1.66666C13.3088 1.66666 16.6667 5.02452 16.6667 9.16666C16.6667 13.3088 13.3088 16.6667 9.16666 16.6667C5.02452 16.6667 1.66666 13.3088 1.66666 9.16666Z"
+                      />
+                      <path
+                        fillRule="evenodd"
+                        clipRule="evenodd"
+                        d="M13.2857 13.2857C13.6112 12.9603 14.1388 12.9603 14.4642 13.2857L18.0892 16.9107C18.4147 17.2362 18.4147 17.7638 18.0892 18.0892C17.7638 18.4147 17.2362 18.4147 16.9107 18.0892L13.2857 14.4642C12.9603 14.1388 12.9603 13.6112 13.2857 13.2857Z"
+                      />
+                    </svg>
+                  </button>
 
-      <input
+                  <input
                     type="text"
                     placeholder="Type to search..."
                     className="w-full bg-transparent pl-9 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:text-white dark:bg-dark dark:border-gray-600"
@@ -139,27 +138,27 @@ const Products: React.FC = () => {
                   />
                 </div>
 
-    {/* Category Dropdown */}
-    <div className="w-[50%]">
-      <select
-        value={selectedCategory} // Set the selected category here
-        onChange={(e) => {
-          setSelectedCategory(e.target.value);
-          fetchProducts(searchQuery, e.target.value); // Fetch products based on the selected category
-        }}
-        name="category"
-        className="w-full bg-transparent pl-3 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:text-white dark:bg-dark dark:border-gray-600"
-      >
-        <option value="">Select Category</option>
-        {categories.map((category) => (
-          <option key={category._id} value={category._id} className='dark:text-black dark:bg-dark'>
-            {category.category_name}
-          </option>
-        ))}
-      </select>
-    </div>
-  </div>
-</form>
+                {/* Category Dropdown */}
+                <div className="w-[50%]">
+                  <select
+                    value={selectedCategory} // Set the selected category here
+                    onChange={(e) => {
+                      setSelectedCategory(e.target.value);
+                      fetchProducts(searchQuery, e.target.value); // Fetch products based on the selected category
+                    }}
+                    name="category"
+                    className="w-full bg-transparent pl-3 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary dark:text-white dark:bg-dark dark:border-gray-600"
+                  >
+                    <option value="">Select Category</option>
+                    {categories.map((category) => (
+                      <option key={category._id} value={category._id} className='dark:text-black dark:bg-dark'>
+                        {category.category_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </form>
           </div>
           <button
             className="rounded-md bg-blue-300 px-2 py-1 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 dark:bg-blue-400 dark:hover:bg-blue-500 dark:focus:ring-blue-300"
@@ -227,7 +226,7 @@ const Products: React.FC = () => {
                 </div> */}
                 <div className="flex items-center justify-center col-span-1 sm:col-span-2">
                   <p className="text-sm text-black dark:text-white">
-                  {selectedCategory ? JSON.stringify(product.category) : product.category?.category_name }
+                    {selectedCategory ? JSON.stringify(product.category) : product.category?.category_name}
                   </p>
                 </div>
                 <div className="flex items-center justify-center col-span-1 sm:col-span-1">
@@ -241,15 +240,14 @@ const Products: React.FC = () => {
                   </p>
                 </div>
                 <div className="flex items-center justify-center col-span-1 sm:col-span-1">
-                <p
-  className={`inline-flex rounded-full bg-opacity-10 py-1 px-3 text-sm font-medium ${
-    product.in_stock === true
-      ? 'bg-success text-success'
-      : 'bg-danger text-danger'
-  }`}
->
-  {product.in_stock === true ? 'Available' : 'Not Available'}
-</p>
+                  <p
+                    className={`inline-flex rounded-full bg-opacity-10 py-1 px-3 text-sm font-medium ${product.in_stock === true
+                      ? 'bg-success text-success'
+                      : 'bg-danger text-danger'
+                      }`}
+                  >
+                    {product.in_stock === true ? 'Available' : 'Not Available'}
+                  </p>
 
                 </div>
                 <div className="flex items-center justify-center space-x-2">
@@ -275,9 +273,9 @@ const Products: React.FC = () => {
                       />
                     </svg>
                   </button>
-                  <button 
-                  className="hover:text-primary"
-                  onClick={() => handleDeleteProduct(product._id)}
+                  <button
+                    className="hover:text-primary"
+                    onClick={() => handleDeleteProduct(product._id)}
                   >
                     <svg
                       className="fill-current"
@@ -301,22 +299,22 @@ const Products: React.FC = () => {
               </div>
             ))}
             <div className="flex justify-center py-6">
-  <ReactPaginate
-    previousLabel={"Previous"}
-    nextLabel={"Next"}
-    pageCount={pageCount}
-    onPageChange={(event) => {
-      setCurrentPage(event.selected); // Ensure this updates the state correctly
-    }}
-    forcePage={currentPage} // Ensure the current page is highlighted
-    containerClassName={"flex space-x-2"}
-    pageClassName={"px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"}
-    activeClassName={"bg-blue-300 dark:bg-blue-400 text-white"} // Highlights active page
-    previousClassName={"px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"}
-    nextClassName={"px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"}
-    disabledClassName={"opacity-50 cursor-not-allowed"}
-  />
-</div>
+              <ReactPaginate
+                previousLabel={"Previous"}
+                nextLabel={"Next"}
+                pageCount={pageCount}
+                onPageChange={(event) => {
+                  setCurrentPage(event.selected); // Ensure this updates the state correctly
+                }}
+                forcePage={currentPage} // Ensure the current page is highlighted
+                containerClassName={"flex space-x-2"}
+                pageClassName={"px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"}
+                activeClassName={"bg-blue-300 dark:bg-blue-400 text-white"} // Highlights active page
+                previousClassName={"px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"}
+                nextClassName={"px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"}
+                disabledClassName={"opacity-50 cursor-not-allowed"}
+              />
+            </div>
           </>
         )}
         {/* Add/Edit Product Modal */}
@@ -328,7 +326,7 @@ const Products: React.FC = () => {
           />
         )}
 
-<ToastContainer />
+        <ToastContainer />
 
       </div>
     </>

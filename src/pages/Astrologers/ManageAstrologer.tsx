@@ -5,6 +5,8 @@ import ReactPaginate from "react-paginate";
 import axiosInstance from "../../utils/axiosInstance";
 import axios from "axios";
 import toast, { Toaster } from 'react-hot-toast';
+import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
+import Select from "react-select";
 
 const ITEMS_PER_PAGE = 10; // Number of items per page
 
@@ -21,6 +23,74 @@ const ManageAIAstrologer = () => {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref for storing the timeout ID
   const [currentStep, setCurrentStep] = useState(1)
   const [inputValue, setInputValue] = useState("");
+  const [passwordVisible, setPasswordVisible] = useState(false);
+  const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+  const [languages, setLangugaes] = useState([])
+  const [astro_Category, setAstro_Category] = useState([])
+  const fileInputRef = useRef(null);
+
+  // Handle file upload
+  const handleFileUpload = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    console.log("Selected file:", file);
+
+    const formData = new FormData();
+    formData.append('excel_astrologer', file);
+
+    // Use toast.promise to handle the file upload process
+    toast.promise(
+      axiosInstance.post('/admin/signup/astrologer/excel', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      }),
+      {
+        loading: 'Uploading file...', // Loading message
+        success: (response) => {
+          if (response.data.statusCode === 200 || response.data.statusCode === 201) {
+            // Reset the file input
+            if (fileInputRef.current) {
+              fileInputRef.current.value = ''; // Clear the file input
+            }
+            fetchUsers()
+            return 'File uploaded successfully!'; // Success message
+          } else {
+            // Reset the file input
+            if (fileInputRef.current) {
+              fileInputRef.current.value = ''; // Clear the file input
+            }
+            return 'File upload failed!'; // Failure message
+          }
+        },
+        error: (error) => {
+          // Reset the file input
+          if (fileInputRef.current) {
+            fileInputRef.current.value = ''; // Clear the file input
+          }
+
+          if (error.response) {
+            if (fileInputRef.current) {
+              fileInputRef.current.value = ''; // Clear the file input
+            }
+
+            return error.response.data.message || 'File upload failed. Please try again.'; // Error message from backend
+          } else {
+            if (fileInputRef.current) {
+              fileInputRef.current.value = ''; // Clear the file input
+            }
+            return 'File upload failed. Please try again.'; // Generic error message
+          }
+        },
+      }
+    );
+  };
+
+  // Trigger file input click
+  const handleBulkUploadClick = () => {
+    fileInputRef.current.click();
+  };
+
+
   const [newUser, setNewUser] = useState({
     name: "",
     avatar: "",
@@ -35,24 +105,75 @@ const ManageAIAstrologer = () => {
     callCommission: 0,
     videoCallCommission: 0,
     rating: 0,
+    password: "",
+    confirmPassword: "",
+    isAvailable: false,
+    specialites: []
 
 
   })
 
+  // Convert languages into options for react-select
+  const languageOptions = languages.map((lang) => ({
+    value: lang._id,
+    label: lang.name,
+  }));
+
+  const categoryOptions = astro_Category.map((cat) => ({
+    value: cat._id,
+    label: cat.name,
+  }));
+
+
+
+  const togglePasswordVisibility = () => {
+    setPasswordVisible(!passwordVisible);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setConfirmPasswordVisible(!confirmPasswordVisible);
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const response = await axiosInstance.post("/admin/getastrologers");
+      // console.log(response.data);
+      setAllUsers(response.data.data.astrologers); // Store all users
+      setFilteredUsers(response.data.data.astrologers); // Initialize filtered users with all users
+    } catch (error) {
+      console.error("Error fetching users:", error);
+    }
+  };
+
   // Fetch users from the API
   useEffect(() => {
-    const fetchUsers = async () => {
+
+    const fetchLangugaes = async () => {
       try {
-        const response = await axiosInstance.post("/admin/getastrologers");
-        // console.log(response.data);
-        setAllUsers(response.data.data.astrologers); // Store all users
-        setFilteredUsers(response.data.data.astrologers); // Initialize filtered users with all users
+        const response = await axiosInstance.post("/admin/get/languages");
+        // const languageNames = response.data.data.map(language => language.name);
+        setLangugaes(response.data.data); // Save only the names in the state
+        // setAllUsers(response.data.data.astrologers); // Store all users
+        // setFilteredUsers(response.data.data.astrologers); // Initialize filtered users with all users
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+    const fetchAstro_Categories = async () => {
+      try {
+        const response = await axiosInstance.post("/admin/get/astrologer/category");
+        // console.log({ response })
+        if (response.data.statusCode === 200) {
+          setAstro_Category(response?.data.data)
+        }
       } catch (error) {
         console.error("Error fetching users:", error);
       }
     };
 
     fetchUsers();
+    fetchAstro_Categories()
+    fetchLangugaes()
   }, []); // Fetch users on component mount
 
   // Custom debounce function for search
@@ -109,10 +230,18 @@ const ManageAIAstrologer = () => {
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && inputValue.trim()) {
-      setNewUser({
-        ...newUser,
-        specialities: [...newUser.specialities, inputValue.trim()],
-      });
+      console.log({ inputValue })
+      if (isEditModalOpen) {
+        setSelectedUser({
+          ...selectedUser,
+          specialities: [...selectedUser.specialities, inputValue.trim()],
+        });
+      } else {
+        setNewUser({
+          ...newUser,
+          specialities: [...newUser.specialities, inputValue.trim()],
+        });
+      }
       setInputValue(""); // Clear the input after adding
     }
   };
@@ -229,22 +358,23 @@ const ManageAIAstrologer = () => {
 
 
   const handleAddAstrologerSubmit = async (e) => {
+    // console.log({ newUser })
     e.preventDefault(); // Prevent default form submission behavior
 
     if (newUser.password !== newUser.confirmPassword) {
       toast.error("Password is incorrect")
       return
     }
-    if (newUser.gender === "") {
+    if (newUser.gender === "" || !newUser.gender) {
       toast.error("Please choose Gender")
       return
     }
-    if (!newUser.isAvailable) {
+    if (newUser.isAvailable !== true && newUser.isAvailable !== false) {
       toast.error("Please choose availability")
       return
     }
 
-    if (!newUser.isFeatured) {
+    if (newUser.isFeatured !== true && newUser.isFeatured !== false) {
       toast.error("Please choose trending option")
       return
     }
@@ -252,8 +382,12 @@ const ManageAIAstrologer = () => {
       toast.error("Password is missing")
       return
     }
-    if (!newUser.isVerified) {
+    if (newUser.isVerified !== true && newUser.isVerified !== false) {
       toast.error("Please choose verified options ")
+      return
+    }
+    if (!newUser.languages) {
+      toast.error("Please choose language  ")
       return
     }
     // Clean up the specialities array by removing empty strings
@@ -261,83 +395,205 @@ const ManageAIAstrologer = () => {
 
     // Update the newUser object with the cleaned specialities array
     const updatedNewUser = { ...newUser, specialities: cleanedSpecialities };
-    console.log({ updatedNewUser })
+    // console.log({ updatedNewUser })
 
-    // try {
-    //   // Send the cleaned new astrologer data to the API
-    //   const response = await axiosInstance.post('/admin/signup/astrologer', updatedNewUser);
+    try {
+      // Send the cleaned new astrologer data to the API
+      const response = await axiosInstance.post('/admin/signup/astrologer', updatedNewUser);
+      console.log({ response })
+      if (response.data.statusCode === 201) {
+        toast.success(response.data.message || "Astrologer added successfully!"); // Show success toast
+        setIsAddModalOpen(false); // Close the modal
 
-    //   if (response.data.success) {
-    //     toast.success(response.data.message || "AI Astrologer added successfully!"); // Show success toast
-    //     setIsAddModalOpen(false); // Close the modal
+        // Optionally, add the new astrologer to the state
+        const updatedUsers = [...allUsers, response.data.data];
+        setAllUsers(updatedUsers);
+        setFilteredUsers(updatedUsers);
+        setCurrentStep(1)
 
-    //     // Optionally, add the new astrologer to the state
-    //     const updatedUsers = [...allUsers, response.data.data];
-    //     setAllUsers(updatedUsers);
-    //     setFilteredUsers(updatedUsers);
-    //   } else {
-    //     toast.error("Something went wrong. Please try again."); // Show error toast
-    //   }
-    // } catch (error) {
-    //   console.error("Error adding astrologer:", error);
-    //   toast.error("Something went wrong. Please try again."); // Show error toast
-    // }
+      } else {
+
+        toast.error(response.data.message); // Show error toast
+      }
+    } catch (error) {
+      console.error("Error adding astrologer:", error);
+      toast.error("Something went wrong. Please try again."); // Show error toast
+    }
   };
 
-  console.log({ newUser })
+  console.log({ selectedUser })
   const validateCurrentStep = (step: any) => {
-    switch (step) {
-      case 1:
-        // Validate Step 1 fields
-        if (
-          !newUser.avatar ||
-          !newUser.name ||
-          newUser.specialities.length === 0 ||
-          newUser.rating === null ||
-          newUser.experience === null ||
-          newUser.phone === null ||
-          isNaN(newUser.experience) || newUser.experience < 0 ||
-          isNaN(newUser.rating) || newUser.rating < 0 ||
-          !Array.isArray(newUser.specialities) || !newUser.specialities.every((s) => typeof s === "string")
-        ) {
-          toast.error("Please fill all required fields in Step 1.");
-          return false;
-        }
-        break;
+    if (!isEditModalOpen) {
+      let errorMessages = [];
+      switch (step) {
+        case 1:
+          // Check for each required field and return if invalid
+          if (!newUser.avatar) {
+            errorMessages.push("Avatar is required.");
+            toast.error(`Please fill all required fields: ${errorMessages.join(" ")}`);
+            return false;
+          }
+          if (!newUser.name) {
+            errorMessages.push("Name is required.");
+            toast.error(`Please fill all required fields: ${errorMessages.join(" ")}`);
+            return false;
+          }
+          if (newUser.isFeatured !== true && newUser.isFeatured !== false) {
+            errorMessages.push("The 'is Trending' field must be true or false.");
+            toast.error(`Please fill all required fields: ${errorMessages.join(" ")}`);
+            return false;
+          }
+          if (newUser.specialities.length === 0) {
+            errorMessages.push("Specialities are required.");
+            toast.error(`Please fill all required fields: ${errorMessages.join(" ")}`);
+            return false;
+          }
+          if (newUser.rating === null || isNaN(newUser.rating) || newUser.rating < 0) {
+            errorMessages.push("A valid rating is required.");
+            toast.error(`Please fill all required fields: ${errorMessages.join(" ")}`);
+            return false;
+          }
+          if (newUser.experience === null || isNaN(newUser.experience) || newUser.experience < 0) {
+            errorMessages.push("A valid experience is required.");
+            toast.error(`Please fill all required fields: ${errorMessages.join(" ")}`);
+            return false;
+          }
+          if (newUser.phone === null || !newUser.phone || newUser.phone.length < 10) {
+            errorMessages.push("A valid phone number is required (at least 10 digits).");
+            toast.error(`Please fill all required fields: ${errorMessages.join(" ")}`);
+            return false;
+          }
 
-      case 2:
-        // Validate Step 2 fields
-        if (
-          newUser.pricePerCallMinute === null ||
-          newUser.pricePerVideoCallMinute === null ||
-          newUser.pricePerChatMinute === null ||
-          newUser.chatCommission === null ||
-          newUser.callCommission === null ||
-          newUser.videoCallCommission === null ||
-          isNaN(newUser.pricePerCallMinute) || newUser.pricePerCallMinute < 0 ||
-          isNaN(newUser.pricePerVideoCallMinute) || newUser.pricePerVideoCallMinute < 0 ||
-          isNaN(newUser.pricePerChatMinute) || newUser.pricePerChatMinute < 0 ||
-          isNaN(newUser.chatCommission) || newUser.chatCommission < 0 ||
-          isNaN(newUser.callCommission) || newUser.callCommission < 0 ||
-          isNaN(newUser.videoCallCommission) || newUser.videoCallCommission < 0
-        ) {
-          toast.error("Please fill all required fields in Step 2.");
-          return false;
-        }
-        break;
+          // Check if specialities is an array of strings
+          if (!Array.isArray(newUser.specialities) || !newUser.specialities.every((s) => typeof s === "string")) {
+            errorMessages.push("Specialities should be an array of strings.");
+            toast.error(`Please fill all required fields: ${errorMessages.join(" ")}`);
+            return false;
+          }
 
-      case 3:
-        // Validate Step 3 fields
-        if (newUser.isVerified === null || !newUser.gender) {
-          toast.error("Please fill all required fields in Step 3.");
-          return false;
-        }
-        break;
+          break;
 
-      default:
-        return true;
+
+
+        case 2:
+          // Validate Step 2 fields
+          if (
+            newUser.pricePerCallMinute === null ||
+            newUser.pricePerVideoCallMinute === null ||
+            newUser.pricePerChatMinute === null ||
+            newUser.chatCommission === null ||
+            newUser.callCommission === null ||
+            newUser.videoCallCommission === null ||
+            isNaN(newUser.pricePerCallMinute) || newUser.pricePerCallMinute < 0 ||
+            isNaN(newUser.pricePerVideoCallMinute) || newUser.pricePerVideoCallMinute < 0 ||
+            isNaN(newUser.pricePerChatMinute) || newUser.pricePerChatMinute < 0 ||
+            isNaN(newUser.chatCommission) || newUser.chatCommission < 0 ||
+            isNaN(newUser.callCommission) || newUser.callCommission < 0 ||
+            isNaN(newUser.videoCallCommission) || newUser.videoCallCommission < 0
+          ) {
+            toast.error("Please fill all required fields in Step 2.");
+            return false;
+          }
+          break;
+
+        case 3:
+          // Validate Step 3 fields
+          if (newUser.isVerified === null || !newUser.gender) {
+            toast.error("Please fill all required fields in Step 3.");
+            return false;
+          }
+          break;
+
+        default:
+          return true;
+      }
+      return true;
+    } else {
+      let errorMessages = [];
+      switch (step) {
+        case 1:
+          // Check for each required field and return if invalid
+          if (!selectedUser.avatar) {
+            errorMessages.push("Avatar is required.");
+            toast.error(`Please fill all required fields: ${errorMessages.join(" ")}`);
+            return false;
+          }
+          if (!selectedUser.name) {
+            errorMessages.push("Name is required.");
+            toast.error(`Please fill all required fields: ${errorMessages.join(" ")}`);
+            return false;
+          }
+          if (selectedUser.isFeatured !== true && selectedUser.isFeatured !== false) {
+            errorMessages.push("The 'is Trending' field must be true or false.");
+            toast.error(`Please fill all required fields: ${errorMessages.join(" ")}`);
+            return false;
+          }
+          if (selectedUser.specialities.length === 0) {
+            errorMessages.push("Specialities are required.");
+            toast.error(`Please fill all required fields: ${errorMessages.join(" ")}`);
+            return false;
+          }
+          if (selectedUser.rating === null || isNaN(selectedUser.rating) || selectedUser.rating < 0) {
+            errorMessages.push("A valid rating is required.");
+            toast.error(`Please fill all required fields: ${errorMessages.join(" ")}`);
+            return false;
+          }
+          if (selectedUser.experience === null || isNaN(selectedUser.experience) || selectedUser.experience < 0) {
+            errorMessages.push("A valid experience is required.");
+            toast.error(`Please fill all required fields: ${errorMessages.join(" ")}`);
+            return false;
+          }
+          if (selectedUser.phone === null || !selectedUser.phone || selectedUser.phone.length < 10) {
+            errorMessages.push("A valid phone number is required (at least 10 digits).");
+            toast.error(`Please fill all required fields: ${errorMessages.join(" ")}`);
+            return false;
+          }
+
+          // Check if specialities is an array of strings
+          if (!Array.isArray(newUser.specialities) || !newUser.specialities.every((s) => typeof s === "string")) {
+            errorMessages.push("Specialities should be an array of strings.");
+            toast.error(`Please fill all required fields: ${errorMessages.join(" ")}`);
+            return false;
+          }
+
+          break;
+
+
+
+        case 2:
+          // Validate Step 2 fields
+          if (
+            newUser.pricePerCallMinute === null ||
+            newUser.pricePerVideoCallMinute === null ||
+            newUser.pricePerChatMinute === null ||
+            newUser.chatCommission === null ||
+            newUser.callCommission === null ||
+            newUser.videoCallCommission === null ||
+            isNaN(newUser.pricePerCallMinute) || newUser.pricePerCallMinute < 0 ||
+            isNaN(newUser.pricePerVideoCallMinute) || newUser.pricePerVideoCallMinute < 0 ||
+            isNaN(newUser.pricePerChatMinute) || newUser.pricePerChatMinute < 0 ||
+            isNaN(newUser.chatCommission) || newUser.chatCommission < 0 ||
+            isNaN(newUser.callCommission) || newUser.callCommission < 0 ||
+            isNaN(newUser.videoCallCommission) || newUser.videoCallCommission < 0
+          ) {
+            toast.error("Please fill all required fields in Step 2.");
+            return false;
+          }
+          break;
+
+        case 3:
+          // Validate Step 3 fields
+          if (newUser.isVerified === null || !newUser.gender) {
+            toast.error("Please fill all required fields in Step 3.");
+            return false;
+          }
+          break;
+
+        default:
+          return true;
+      }
+      return true;
     }
-    return true;
   };
 
 
@@ -391,6 +647,24 @@ const ManageAIAstrologer = () => {
             >
               Add  Astrologer
             </button>
+            <div>
+              {/* Hidden file input */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                style={{ display: 'none' }}
+                accept=".xlsx, .xls" // Allow only Excel files
+                onChange={(e) => handleFileUpload(e)}
+              />
+
+              {/* Bulk Upload Button */}
+              <button
+                className="rounded-md bg-blue-300 px-4 py-2 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 dark:bg-blue-400 dark:hover:bg-blue-500 dark:focus:ring-blue-300"
+                onClick={() => handleBulkUploadClick()}
+              >
+                Bulk Upload
+              </button>
+            </div>
           </div>
         </div>
 
@@ -466,7 +740,10 @@ const ManageAIAstrologer = () => {
             <div className="flex items-center justify-center col-span-2 space-x-3.5">
               <button
                 className="hover:text-primary"
-                onClick={() => handleEdit(user)} // Pass the user to the edit function
+                onClick={() => {
+                  setCurrentStep(1)
+                  handleEdit(user)
+                }} // Pass the user to the edit function
               >
                 <FaEdit className="text-blue-500" size={18} />
               </button>
@@ -498,267 +775,468 @@ const ManageAIAstrologer = () => {
         </div>
       </div>
 
+
+
+
       {/* Edit Modal */}
       {isEditModalOpen && selectedUser && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-999">
           <div className="bg-white dark:bg-boxdark rounded-lg p-6 w-full max-w-4xl mx-4 landscape-modal">
-            <h2 className="text-xl font-semibold mb-4">Edit AI Astrologer</h2>
+            <div className="w-full flex justify-between">
+              <h2 className="text-xl font-semibold mb-4">Edit Astrologer</h2>
+              <p className="font-bold">Step {currentStep}</p>
+            </div>
             <form onSubmit={handleEditSubmit}>
-              <div className="grid grid-cols-2 gap-4">
-                {/* Avatar Image and Upload */}
-                <div className="col-span-2">
-                  <label className="block text-sm font-medium mb-1">Avatar</label>
-                  {uploading && (
-                    <p className="text-sm text-gray-500">Uploading...</p>
-                  )}
-                  <div className="flex items-center space-x-4">
-                    {/* Display Current Avatar */}
-                    <img
-                      src={selectedUser.avatar}
-                      alt="Avatar"
+              {/* Step 1: Basic Information */}
+              {currentStep === 1 && (
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Avatar Image and Upload */}
+                  <div className="col-span-2">
+                    <label className="block text-sm font-medium mb-1">
+                      Avatar <span className="text-red-500">*</span>
+                    </label>
+                    {uploading && (
+                      <p className="text-sm text-gray-500">Uploading...</p>
+                    )}
+                    <div className="flex items-center space-x-4">
+                      {/* Display Current Avatar */}
+                      <img
+                        src={selectedUser.avatar || ""}
+                        alt="Avatar"
+                        className="h-16 w-16 rounded-full object-cover"
+                      />
+                      {/* File Input for Upload */}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoChange}
+                        className="w-full p-2 border border-stroke rounded-md"
+                      />
+                    </div>
+                  </div>
 
-                      className="h-16 w-16 rounded-full object-cover"
-                    />
-                    {/* File Input for Upload */}
+                  {/* Name */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Name <span className="text-red-500">*</span></label>
                     <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoChange}
+                      type="text"
+                      value={selectedUser.name || ""}
+                      onChange={(e) =>
+                        setSelectedUser({ ...selectedUser, name: e.target.value })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Phone Number <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedUser.phone || ""}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (/^\d*$/.test(value) && value.length <= 10) {
+                          setSelectedUser({ ...selectedUser, phone: value });
+                        }
+                      }}
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                    <p className="text-[12px] text-grey">Phone number must be 10 digits</p>
+                  </div>
+
+                  {/* Experience */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Experience (years) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={selectedUser.experience || 0}
+                      onChange={(e) =>
+                        setSelectedUser({
+                          ...selectedUser,
+                          experience: Number(e.target.value),
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Rating */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Rating <span className="text-red-500">*</span></label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={5}
+                      placeholder="Please enter rating from 0 to 5"
+                      value={selectedUser.rating}
+                      onChange={(e) => {
+                        if (Number(e.target.value) > 5 || Number(e.target.value) < 0) {
+                          toast.error("Rating must be between 0 to 5");
+                          setSelectedUser({
+                            ...selectedUser,
+                            rating: 0,
+                          });
+                          return;
+                        }
+                        setSelectedUser({
+                          ...selectedUser,
+                          rating: Number(e.target.value),
+                        });
+                      }}
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Specialities */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Specialities <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      className="w-full p-2 border border-stroke rounded-md"
+                      placeholder="Add a speciality"
+                    />
+                    <div className="flex flex-wrap gap-2 my-2">
+                      {selectedUser.specialities.map((speciality, index) => (
+                        <div key={index} className="flex items-center bg-gray-200 p-2 rounded-md">
+                          <span>{speciality}</span>
+                          <button
+                            type="button"
+                            className="ml-2 text-red-500"
+                            onClick={() => {
+                              setSelectedUser({
+                                ...selectedUser,
+                                specialities: selectedUser.specialities.filter((item) => item !== speciality),
+                              });
+                            }}
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Is Trending */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Is Trending? <span className="text-red-500">*</span></label>
+                    <select
+                      value={selectedUser.isFeatured ? "true" : "false"}
+                      onChange={(e) =>
+                        setSelectedUser({
+                          ...selectedUser,
+                          isFeatured: e.target.value === "true",
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    >
+                      <option value="">Select Options</option>
+                      <option value="true">Yes</option>
+                      <option value="false">No</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 2: Pricing and Commissions */}
+              {currentStep === 2 && (
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Price Per Call Minute */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Price Per Call Minute <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={selectedUser.pricePerCallMinute}
+                      onChange={(e) =>
+                        setSelectedUser({
+                          ...selectedUser,
+                          pricePerCallMinute: Number(e.target.value),
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Price Per Video Call Minute */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Price Per Video Call Minute <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={selectedUser.pricePerVideoCallMinute}
+                      onChange={(e) =>
+                        setSelectedUser({
+                          ...selectedUser,
+                          pricePerVideoCallMinute: Number(e.target.value),
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Price Per Chat Minute */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Price Per Chat Minute <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={selectedUser.pricePerChatMinute}
+                      onChange={(e) =>
+                        setSelectedUser({
+                          ...selectedUser,
+                          pricePerChatMinute: Number(e.target.value),
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Commission Per Chat Minute */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Commission Per Chat Minute <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={selectedUser.chatCommission}
+                      onChange={(e) =>
+                        setSelectedUser({
+                          ...selectedUser,
+                          chatCommission: Number(e.target.value),
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Commission Per Call Minute */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Commission Per Call Minute <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={selectedUser.callCommission}
+                      onChange={(e) =>
+                        setSelectedUser({
+                          ...selectedUser,
+                          callCommission: Number(e.target.value),
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    />
+                  </div>
+
+                  {/* Commission Per Video Call Minute */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Commission Per Video Call Minute <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={selectedUser.videoCallCommission}
+                      onChange={(e) =>
+                        setSelectedUser({
+                          ...selectedUser,
+                          videoCallCommission: Number(e.target.value),
+                        })
+                      }
                       className="w-full p-2 border border-stroke rounded-md"
                     />
                   </div>
                 </div>
+              )}
 
-                {/* Name */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">Name</label>
-                  <input
-                    type="text"
-                    value={selectedUser.name}
-                    onChange={(e) =>
-                      setSelectedUser({ ...selectedUser, name: e.target.value })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
+              {/* Step 3: Verification and Gender */}
+              {currentStep === 3 && (
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Verified */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Is Verified? <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={selectedUser.isVerified ? "Yes" : "No"}
+                      onChange={(e) =>
+                        setSelectedUser({
+                          ...selectedUser,
+                          isVerified: e.target.value === "Yes",
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    >
+                      <option value="Yes">Yes</option>
+                      <option value="No">No</option>
+                    </select>
+                  </div>
+
+                  {/* Gender */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Gender <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={selectedUser.gender || ""}
+                      onChange={(e) =>
+                        setSelectedUser({
+                          ...selectedUser,
+                          gender: e.target.value,
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    >
+                      <option value="">Select Gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  {/* Password */}
+
+                  {/* Available */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Available <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={selectedUser.isAvailable ? "True" : "False"}
+                      onChange={(e) =>
+                        setSelectedUser({
+                          ...selectedUser,
+                          isAvailable: e.target.value === "True",
+                        })
+                      }
+                      className="w-full p-2 border border-stroke rounded-md"
+                    >
+                      <option value="">Select Options</option>
+                      <option value="True">True</option>
+                      <option value="False">False</option>
+                    </select>
+                  </div>
+
+                  {/* Languages (Multi-select) */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Languages <span className="text-red-500">*</span>
+                    </label>
+                    <Select
+                      isMulti
+                      options={languageOptions}
+                      value={
+                        selectedUser?.languages?.length > 0
+                          ? languageOptions.filter((option) =>
+                            selectedUser.languages.includes(option.value)
+                          )
+                          : null
+                      }
+                      onChange={(selectedOptions) =>
+                        setSelectedUser({
+                          ...selectedUser,
+                          languages: selectedOptions.map((option) => option.value),
+                        })
+                      }
+                      className="w-full"
+                    />
+                  </div>
+
+                  {/* Category (Multi-select) */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      Astrologer Category <span className="text-red-500">*</span>
+                    </label>
+                    <Select
+                      isMulti
+                      options={categoryOptions}
+                      value={
+                        selectedUser?.category?.length > 0
+                          ? categoryOptions.filter((option) =>
+                            selectedUser.category.includes(option.value)
+                          )
+                          : null
+                      }
+                      onChange={(selectedOptions) =>
+                        setSelectedUser({
+                          ...selectedUser,
+                          category: selectedOptions.map((option) => option.value),
+                        })
+                      }
+                      className="w-full"
+                    />
+                  </div>
                 </div>
-
-                {/* Experience */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Experience (years)
-                  </label>
-                  <input
-                    type="number"
-                    value={selectedUser.experience}
-                    onChange={(e) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        experience: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-
-                {/* Specialities */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Specialities
-                  </label>
-                  <input
-                    type="text"
-                    value={selectedUser.specialities.join(", ")}
-                    onChange={(e) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        specialities: e.target.value.split(", "),
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-
-                {/* Rating */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">Is Trending</label>
-                  <select
-                    value={selectedUser.isFeatured ? "true" : "false"} // Convert boolean to string for the dropdown
-                    onChange={(e) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        isFeatured: e.target.value === "true", // Convert string back to boolean
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  >
-                    <option value="true">Yes</option>
-                    <option value="false">No</option>
-                  </select>
-                </div>
-
-
-                {/* Price Per Call Minute */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Price Per Call Minute ($)
-                  </label>
-                  <input
-                    type="number"
-                    value={selectedUser.pricePerCallMinute}
-                    onChange={(e) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        pricePerCallMinute: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-                {/* Price Per Call Minute */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Price Per Video Call Minute ($)
-                  </label>
-                  <input
-                    type="number"
-                    value={selectedUser.pricePerVideoCallMinute}
-                    onChange={(e) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        pricePerVideoCallMinute: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-
-                {/* Price Per Chat Minute */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Price Per Chat Minute ($)
-                  </label>
-                  <input
-                    type="number"
-                    value={selectedUser.pricePerChatMinute}
-                    onChange={(e) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        pricePerChatMinute: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-
-                {/* Price Per Chat Minute */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Commission Per Chat Minute ($)
-                  </label>
-                  <input
-                    type="number"
-                    value={selectedUser.chatCommission}
-                    onChange={(e) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        chatCommission: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-                {/* Price Per Chat Minute */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Commission Per Call Minute ($)
-                  </label>
-                  <input
-                    type="number"
-                    value={selectedUser.callCommission}
-                    onChange={(e) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        callCommission: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-
-                {/* Price Per Chat Minute */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Commission Per Video Call Minute ($)
-                  </label>
-                  <input
-                    type="number"
-                    value={selectedUser.videoCallCommission}
-                    onChange={(e) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        videoCallCommission: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  />
-                </div>
-
-
-
-                {/* Verified */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">Verified</label>
-                  <select
-                    value={selectedUser.isVerified ? "Yes" : "No"}
-                    onChange={(e) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        isVerified: e.target.value === "Yes",
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  >
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                  </select>
-                </div>
-
-                {/* Gender */}
-                <div>
-                  <label className="block text-sm font-medium mb-1">Gender</label>
-                  <select
-                    value={selectedUser.gender}
-                    onChange={(e) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        gender: e.target.value,
-                      })
-                    }
-                    className="w-full p-2 border border-stroke rounded-md"
-                  >
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-              </div>
+              )}
 
               {/* Modal Footer */}
               <div className="flex justify-end mt-6 space-x-4">
+                {/* Cancel Button */}
                 <button
                   type="button"
-                  onClick={() => setIsEditModalOpen(false)}
+                  onClick={() => {
+                    setIsEditModalOpen(false);
+                    setCurrentStep(1); // Reset step to 1
+                  }}
                   className="px-4 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  disabled={uploading ? true : false}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                >
-                  Save Changes
-                </button>
+
+                {/* Previous Button */}
+                {currentStep > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(currentStep - 1)}
+                    className="px-4 py-2 bg-blue-300 text-white rounded-md hover:bg-blue-400"
+                  >
+                    Previous
+                  </button>
+                )}
+
+                {/* Next Button */}
+                {currentStep < 3 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (validateCurrentStep(currentStep)) {
+                        setCurrentStep(currentStep + 1);
+                      }
+                    }}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                  >
+                    Next
+                  </button>
+                )}
+
+                {/* Submit Button */}
+                {currentStep === 3 && (
+                  <button
+                    type="submit"
+                    disabled={uploading}
+                    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                  >
+                    Save Changes
+                  </button>
+                )}
               </div>
             </form>
           </div>
@@ -857,6 +1335,7 @@ const ManageAIAstrologer = () => {
                       }}
                       className="w-full p-2 border border-stroke rounded-md"
                     />
+                    <p className="text-[12px] text-grey">Phone number must be 10 digit</p>
                   </div>
 
                   {/* Experience */}
@@ -867,7 +1346,7 @@ const ManageAIAstrologer = () => {
                     <input
                       type="number"
                       min={0}
-                      value={newUser.experience || ""}
+                      value={newUser.experience || 0}
                       onChange={(e) =>
                         setNewUser({
                           ...newUser,
@@ -886,7 +1365,8 @@ const ManageAIAstrologer = () => {
                       type="number"
                       min={0}
                       max={5}
-                      value={newUser.rating || ""}
+                      placeholder="Please enter rating from 0 to 5"
+                      value={newUser.rating}
                       onChange={(e) => {
                         if (Number(e.target.value) > 5 || Number(e.target.value) < 0) {
                           toast.error("Rating must be between 0 to 5");
@@ -923,11 +1403,9 @@ const ManageAIAstrologer = () => {
 
 
                     <div className="relative">
-                      <label className="block text-sm font-medium mb-1">
-                        Specialities <span className="text-red-500">*</span>
-                      </label>
+
                       <div
-                        className="flex flex-wrap gap-2 mb-2"
+                        className="flex flex-wrap gap-2 my-2"
                         style={{
                           maxHeight: "80px", // Adjust the height as needed
                           maxWidth: "100%", // Set the width, or use a fixed value like '300px'
@@ -1167,41 +1645,69 @@ const ManageAIAstrologer = () => {
                     </select>
                   </div>
 
-                  {/* Password */}
                   <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Password <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      value={newUser.password || ""}
-                      onChange={(e) =>
-                        setNewUser({
-                          ...newUser,
-                          password: e.target.value,
-                        })
-                      }
-                      className="w-full p-2 border border-stroke rounded-md"
-                    />
-                  </div>
+                    {/* Password */}
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Password <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={passwordVisible ? "text" : "password"}
+                          value={newUser.password || ""}
+                          onChange={(e) =>
+                            setNewUser({
+                              ...newUser,
+                              password: e.target.value,
+                            })
+                          }
+                          className="w-full p-2 border border-stroke rounded-md"
+                        />
+                        <button
+                          type="button"
+                          onClick={togglePasswordVisibility}
+                          className="absolute right-3 top-2 text-gray-500"
+                        >
+                          {passwordVisible ? (
+                            <AiOutlineEyeInvisible className="w-6 h-6" />
+                          ) : (
+                            <AiOutlineEye className="w-6 h-6" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
 
-                  {/* Confirm Password */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Confirm Password <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="password"
-                      value={newUser.confirmPassword || ""}
-                      disabled={!newUser.password}
-                      onChange={(e) =>
-                        setNewUser({
-                          ...newUser,
-                          confirmPassword: e.target.value,
-                        })
-                      }
-                      className="w-full p-2 border border-stroke rounded-md"
-                    />
+                    {/* Confirm Password */}
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Confirm Password <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={confirmPasswordVisible ? "text" : "password"}
+                          value={newUser.confirmPassword || ""}
+                          disabled={!newUser.password}
+                          onChange={(e) =>
+                            setNewUser({
+                              ...newUser,
+                              confirmPassword: e.target.value,
+                            })
+                          }
+                          className="w-full p-2 border border-stroke rounded-md"
+                        />
+                        <button
+                          type="button"
+                          onClick={toggleConfirmPasswordVisibility}
+                          className="absolute right-3 top-2 text-gray-500"
+                        >
+                          {confirmPasswordVisible ? (
+                            <AiOutlineEyeInvisible className="w-6 h-6" />
+                          ) : (
+                            <AiOutlineEye className="w-6 h-6" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Available */}
@@ -1210,7 +1716,7 @@ const ManageAIAstrologer = () => {
                       Available <span className="text-red-500">*</span>
                     </label>
                     <select
-                      value={newUser.isAvailable ? "True" : "False"}
+                      value={newUser.isAvailable}
                       onChange={(e) =>
                         setNewUser({
                           ...newUser,
@@ -1219,6 +1725,7 @@ const ManageAIAstrologer = () => {
                       }
                       className="w-full p-2 border border-stroke rounded-md"
                     >
+                      <option value="">Select Options</option>
                       <option value="True">True</option>
                       <option value="False">False</option>
                     </select>
@@ -1226,30 +1733,60 @@ const ManageAIAstrologer = () => {
 
                   {/* Languages (Multi-select) */}
                   <div>
-                    <label className="block text-sm font-medium mb-1">
-                      Languages <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      multiple
-                      value={newUser.languages || []}
-                      onChange={(e) =>
-                        setNewUser({
-                          ...newUser,
-                          languages: Array.from(e.target.selectedOptions, (option) => option.value),
-                        })
-                      }
-                      className="w-full p-2 border border-stroke rounded-md"
-                    >
-                      <option value="English">English</option>
-                      <option value="Spanish">Spanish</option>
-                      <option value="French">French</option>
-                      <option value="German">German</option>
-                      <option value="Chinese">Chinese</option>
-                      <option value="Japanese">Japanese</option>
-                      <option value="Hindi">Hindi</option>
-                    </select>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Languages <span className="text-red-500">*</span>
+                      </label>
+                      <Select
+                        isMulti
+                        options={languageOptions}
+                        value={
+                          newUser?.languages?.length > 0
+                            ? languageOptions.filter((option) => newUser.languages.includes(option.value))
+                            : null // Show placeholder when no selection
+                        }
+                        onChange={(selectedOptions) =>
+                          setNewUser({
+                            ...newUser,
+                            languages: selectedOptions.map((option) => option.value),
+                          })
+                        }
+                        className="w-full"
+                      />
+                    </div>
+
+
+
+                  </div>
+                  {/* Category (Multi-select) */}
+                  <div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">
+                        Astrologer Category <span className="text-red-500">*</span>
+                      </label>
+                      <Select
+                        isMulti
+                        options={categoryOptions}
+                        value={
+                          newUser?.category?.length > 0
+                            ? categoryOptions.filter((option) => newUser.category.includes(option.value))
+                            : null // Show placeholder when no selection
+                        }
+                        onChange={(selectedOptions) =>
+                          setNewUser({
+                            ...newUser,
+                            category: selectedOptions.map((option) => option.value),
+                          })
+                        }
+                        className="w-full"
+                      />
+                    </div>
+
+
+
                   </div>
                 </div>
+
               )}
 
 

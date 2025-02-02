@@ -33,6 +33,7 @@ import Categories from './pages/AstroMall/Categories';
 import Orders from './pages/AstroMall/Orders';
 import ManageAIAstrologer from './pages/Astrologers/ManageAIAstrologers';
 import ComingSoon from './pages/ComingSoon';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   const [loading, setLoading] = useState<boolean>(true);
@@ -66,6 +67,7 @@ function App() {
 
   return isAuthenticated ? (
     <DefaultLayout>
+
       <Routes>
         <Route
           index
@@ -76,7 +78,7 @@ function App() {
             </>
           }
         />
-        <Route
+        {/* <Route
           path="/calendar"
           element={
             <>
@@ -84,7 +86,7 @@ function App() {
               <Calendar />
             </>
           }
-        />
+        /> */}
         <Route
           path="/profile"
           element={
@@ -306,6 +308,7 @@ function App() {
         />
 
       </Routes>
+      <Toaster />
     </DefaultLayout>
   ) : (
     <Routes>

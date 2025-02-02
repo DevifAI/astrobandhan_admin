@@ -11,6 +11,7 @@ const ITEMS_PER_PAGE = 10; // Number of items per page
 const ManageAIAstrologer = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [uploading, setUploading] = useState(false)
+  const [inputValue, setInputValue] = useState(''); // State for input value
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // State for delete modal
   const [isEditModalOpen, setIsEditModalOpen] = useState(false); // State for edit modal
   const [selectedUser, setSelectedUser] = useState(null); // State to store the selected user for editing
@@ -220,6 +221,9 @@ const ManageAIAstrologer = () => {
 
     // Update the newUser object with the cleaned specialities array
     const updatedNewUser = { ...newUser, specialities: cleanedSpecialities };
+    if (!updatedNewUser.gender || updatedNewUser.gender === "") {
+      return toast.error("Gender required")
+    }
 
     try {
       // Send the cleaned new astrologer data to the API
@@ -239,6 +243,24 @@ const ManageAIAstrologer = () => {
     } catch (error) {
       console.error("Error adding astrologer:", error);
       toast.error("Something went wrong. Please try again."); // Show error toast
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && inputValue.trim()) {
+      e.preventDefault();
+      if (!isEditModalOpen) {
+        setNewUser({
+          ...newUser,
+          specialities: [...newUser.specialities, inputValue.trim()],
+        });
+      } else {
+        setSelectedUser({
+          ...selectedUser,
+          specialities: [...selectedUser.specialities, inputValue.trim()],
+        });
+      }
+      setInputValue(''); // Clear the input field
     }
   };
 
@@ -472,19 +494,35 @@ const ManageAIAstrologer = () => {
                 {/* Specialities */}
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Specialities
+                    Specialities <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
-                    value={selectedUser.specialities.join(", ")}
-                    onChange={(e) =>
-                      setSelectedUser({
-                        ...selectedUser,
-                        specialities: e.target.value.split(", "),
-                      })
-                    }
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
                     className="w-full p-2 border border-stroke rounded-md"
+                    placeholder="Add a speciality"
                   />
+                  <div className="flex flex-wrap gap-2 my-2">
+                    {selectedUser.specialities.map((speciality, index) => (
+                      <div key={index} className="flex items-center bg-gray-200 p-2 rounded-md">
+                        <span>{speciality}</span>
+                        <button
+                          type="button"
+                          className="ml-2 text-red-500"
+                          onClick={() => {
+                            setSelectedUser({
+                              ...selectedUser,
+                              specialities: selectedUser.specialities.filter((item) => item !== speciality),
+                            });
+                          }}
+                        >
+                          &times;
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* Rating */}
@@ -492,6 +530,8 @@ const ManageAIAstrologer = () => {
                   <label className="block text-sm font-medium mb-1">Rating</label>
                   <input
                     type="number"
+                    min={0}
+                    max={5}
                     value={selectedUser.rating}
                     disabled
                     className="w-full p-2 border border-stroke rounded-md"
@@ -525,7 +565,7 @@ const ManageAIAstrologer = () => {
                   </label>
                   <input
                     type="number"
-                    value={selectedUser.pricePerChatMinute}
+                    value={selectedUser.pricePerChatMinute || 0}
                     min={0}
                     onChange={(e) =>
                       setSelectedUser({
@@ -712,7 +752,8 @@ const ManageAIAstrologer = () => {
                     </label>
                     <input
                       type="number"
-                      value={newUser.experience || ""}
+                      min={0}
+                      value={newUser.experience || 0}
                       onChange={(e) =>
                         setNewUser({
                           ...newUser,
@@ -726,19 +767,35 @@ const ManageAIAstrologer = () => {
                   {/* Specialities */}
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      Specialities
+                      Specialities <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
-                      value={newUser.specialities.join(", ") || ""}
-                      onChange={(e) =>
-                        setNewUser({
-                          ...newUser,
-                          specialities: e.target.value.split(", "),
-                        })
-                      }
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={handleKeyDown}
                       className="w-full p-2 border border-stroke rounded-md"
+                      placeholder="Add a speciality"
                     />
+                    <div className="flex flex-wrap gap-2 my-2">
+                      {newUser.specialities.map((speciality, index) => (
+                        <div key={index} className="flex items-center bg-gray-200 p-2 rounded-md">
+                          <span>{speciality}</span>
+                          <button
+                            type="button"
+                            className="ml-2 text-red-500"
+                            onClick={() => {
+                              setNewUser({
+                                ...newUser,
+                                specialities: newUser.specialities.filter((item) => item !== speciality),
+                              });
+                            }}
+                          >
+                            &times;
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   {/* Rating */}
@@ -746,7 +803,9 @@ const ManageAIAstrologer = () => {
                     <label className="block text-sm font-medium mb-1">Rating</label>
                     <input
                       type="number"
-                      value={newUser.rating || ""}
+                      min={0}
+                      max={5}
+                      value={newUser.rating || 0}
                       onChange={(e) => setNewUser({
                         ...newUser, rating: e.target.value
                       })}
@@ -780,7 +839,8 @@ const ManageAIAstrologer = () => {
                     </label>
                     <input
                       type="number"
-                      value={newUser.pricePerChatMinute || ""
+                      min={0}
+                      value={newUser.pricePerChatMinute || 0
                       }
                       onChange={(e) =>
                         setNewUser({
@@ -824,6 +884,7 @@ const ManageAIAstrologer = () => {
                       }
                       className="w-full p-2 border border-stroke rounded-md"
                     >
+                      <option value="">Select Options</option>
                       <option value="Male">Male</option>
                       <option value="Female">Female</option>
                       <option value="Other">Other</option>
