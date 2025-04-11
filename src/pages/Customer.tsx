@@ -73,7 +73,7 @@ const Customer = () => {
     // console.log({isAddCustomerAdded})
     if (isAddCustomerAdded.status && !isAddCustomerAdded.message !== "") {
       // console.log({isAddCustomerAdded})
-      toast.error(isAddCustomerAdded.message);
+      // toast.error(isAddCustomerAdded.message);
     }
     // if (!isAddCustomerAdded.status && !isAddCustomerAdded.message.trim() !== "") {
     //   console.log({isAddCustomerAdded})

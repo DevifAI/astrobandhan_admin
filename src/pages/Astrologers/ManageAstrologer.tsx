@@ -34,7 +34,8 @@ const ManageAIAstrologer = () => {
     const file = event.target.files[0];
     if (!file) return;
 
-    console.log("Selected file:", file);
+    // console.log("Selected file:", file);
+
 
     const formData = new FormData();
     formData.append('excel_astrologer', file);
@@ -94,7 +95,7 @@ const ManageAIAstrologer = () => {
   const [newUser, setNewUser] = useState({
     name: "",
     avatar: "",
-    specialities: [],
+    specialities: [], // Correct spelling
     experience: 0,
     isVerified: false,
     pricePerChatMinute: 0,
@@ -107,11 +108,11 @@ const ManageAIAstrologer = () => {
     rating: 0,
     password: "",
     confirmPassword: "",
-    isAvailable: false,
-    specialites: []
+    isAvailable: false
+  });
 
 
-  })
+  console.log({ newUser })
 
   // Convert languages into options for react-select
   const languageOptions = languages.map((lang) => ({
@@ -229,7 +230,7 @@ const ManageAIAstrologer = () => {
 
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter" && inputValue.trim()) {
+    if ((e.key === "Enter" || e.key === ' ') && inputValue.trim()) {
       console.log({ inputValue })
       if (isEditModalOpen) {
         setSelectedUser({
@@ -1115,7 +1116,7 @@ const ManageAIAstrologer = () => {
                   {/* Password */}
 
                   {/* Available */}
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-medium mb-1">
                       Available <span className="text-red-500">*</span>
                     </label>
@@ -1133,7 +1134,7 @@ const ManageAIAstrologer = () => {
                       <option value="True">True</option>
                       <option value="False">False</option>
                     </select>
-                  </div>
+                  </div> */}
 
                   {/* Languages (Multi-select) */}
                   <div>
@@ -1716,11 +1717,11 @@ const ManageAIAstrologer = () => {
                       Available <span className="text-red-500">*</span>
                     </label>
                     <select
-                      value={newUser.isAvailable}
+                      value={newUser.isAvailable === true ? "True" : "False"} // Match casing with option values
                       onChange={(e) =>
                         setNewUser({
                           ...newUser,
-                          isAvailable: e.target.value === "True",
+                          isAvailable: e.target.value === "True" ? true : false, // Match casing here too
                         })
                       }
                       className="w-full p-2 border border-stroke rounded-md"
@@ -1730,7 +1731,6 @@ const ManageAIAstrologer = () => {
                       <option value="False">False</option>
                     </select>
                   </div>
-
                   {/* Languages (Multi-select) */}
                   <div>
                     <div>
