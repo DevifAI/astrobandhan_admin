@@ -786,7 +786,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                               }}
                             </SidebarLinkGroup>
                           </li>
-                          <li>
+                          {/* <li>
                             <NavLink
                               to="/history/call"
                               className={({ isActive }) =>
@@ -807,7 +807,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                             >
                               Vedio Call History
                             </NavLink>
-                          </li>
+                          </li> */}
                         </ul>
                       </div>
                       {/* <!-- Dropdown Menu End --> */}

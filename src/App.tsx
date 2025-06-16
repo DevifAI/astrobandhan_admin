@@ -241,24 +241,6 @@ useEffect(() => {
           }
         />
 
-        {/* <Route
-          path="/forms/form-elements"
-          element={
-            <>
-              <PageTitle title="Form Elements | Astro Bandhan" />
-              <FormElements />
-            </>
-          }
-        />
-        <Route
-          path="/forms/form-layout"
-          element={
-            <>
-              <PageTitle title="Form Layout | Astro Bandhan" />
-              <FormLayout />
-            </>
-          }
-        /> */}
         <Route
           path="/tables"
           element={

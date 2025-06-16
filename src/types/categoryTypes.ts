@@ -1,15 +1,15 @@
 export type Category = {
     _id: string;
     category_name: string;
-    no_of_items?: number;
+    totalItems?: number;
     createdAt: string;
     updatedAt: string;
-    image?: string;
+    imageUrl?: string;
   };
   
   export type NewCategory = {
     category_name: string;
-    no_of_items?: number;
+    totalItems?: number;
     imageUrl?: string;
   }
   
@@ -17,5 +17,6 @@ export type Category = {
     isOpen: boolean;
     onClose: () => void;
     category: Category | null;
-    onHandleSubmit: (data: any) => Promise<void>;
+    fetchCategories: () => void;
+    // onHandleSubmit: (data: any) => Promise<void>;
   };

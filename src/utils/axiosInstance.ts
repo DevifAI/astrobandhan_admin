@@ -1,9 +1,16 @@
 import axios, { AxiosInstance } from 'axios';
 
-// Create and type the axios instance
+// Manually control environment
+const isProduction = false; // Set to true for production
+
+// Define base URLs
+const baseURL = isProduction
+  ? 'https://devifai.in/astrobandhan/v1'
+  : 'http://localhost:8080/astrobandhan/v1';
+
+// Create and export the axios instance
 export const axiosInstance: AxiosInstance = axios.create({
-    baseURL: 'https://devifai.in/astrobandhan/v1', // Base URL for your API
+  baseURL,
 });
 
 export default axiosInstance;
-

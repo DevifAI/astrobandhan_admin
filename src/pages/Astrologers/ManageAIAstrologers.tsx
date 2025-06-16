@@ -1,47 +1,49 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import Breadcrumb from "../../components/Breadcrumbs/Breadcrumb";
-import { FaEdit, FaTrash } from "react-icons/fa"; // Import icons from react-icons
-import ReactPaginate from "react-paginate";
-import axiosInstance from "../../utils/axiosInstance";
-import axios from "axios";
+import { useState, useEffect, useCallback, useRef } from 'react';
+import Breadcrumb from '../../components/Breadcrumbs/Breadcrumb';
+import { FaEdit, FaTrash } from 'react-icons/fa'; // Import icons from react-icons
+import ReactPaginate from 'react-paginate';
+import axiosInstance from '../../utils/axiosInstance';
+import axios from 'axios';
 import toast, { Toaster } from 'react-hot-toast';
 
 const ITEMS_PER_PAGE = 10; // Number of items per page
 
 const ManageAIAstrologer = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [uploading, setUploading] = useState(false)
+  const [uploading, setUploading] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false); // State for delete modal
   const [isEditModalOpen, setIsEditModalOpen] = useState(false); // State for edit modal
   const [selectedUser, setSelectedUser] = useState(null); // State to store the selected user for editing
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState('');
   const [filteredUsers, setFilteredUsers] = useState([]); // Holds the filtered users for display
   const [allUsers, setAllUsers] = useState([]); // Holds all users fetched from the API
   const [currentPage, setCurrentPage] = useState(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref for storing the timeout ID
   const [newUser, setNewUser] = useState({
-    name: "",
-    avatar: "",
+    name: '',
+    avatar: '',
     specialities: [],
     experience: 0,
     isVerified: false,
     pricePerChatMinute: 0,
     pricePerCallMinute: 0,
     rating: 0,
-
-
-  })
+    isFeatured: false,
+    isAvailable: false,
+  });
 
   // Fetch users from the API
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await axiosInstance.post("/admin/get/all/ai/astrologers");
+        const response = await axiosInstance.post(
+          '/admin/get/all/ai/astrologers',
+        );
         // console.log(response.data);
         setAllUsers(response.data.data); // Store all users
         setFilteredUsers(response.data.data); // Initialize filtered users with all users
       } catch (error) {
-        console.error("Error fetching users:", error);
+        console.error('Error fetching users:', error);
       }
     };
 
@@ -57,14 +59,14 @@ const ManageAIAstrologer = () => {
 
       // Set a new timeout
       timeoutRef.current = setTimeout(() => {
-        const filtered = allUsers.filter((user) =>
-          user.name.toLowerCase().includes(searchTerm.toLowerCase()) // Search in 'name' field
+        const filtered = allUsers.filter(
+          (user) => user.name.toLowerCase().includes(searchTerm.toLowerCase()), // Search in 'name' field
         );
         setFilteredUsers(filtered); // Update filtered users
         setCurrentPage(0); // Reset to the first page after search
       }, 300); // 300ms delay
     },
-    [allUsers] // Dependency on `allUsers`
+    [allUsers], // Dependency on `allUsers`
   );
 
   // Trigger debounced search when searchTerm changes
@@ -99,7 +101,6 @@ const ManageAIAstrologer = () => {
   };
   // Handle delete button click
 
-
   // Handle delete confirmation
   const handleDeleteConfirm = async () => {
     try {
@@ -113,23 +114,26 @@ const ManageAIAstrologer = () => {
 
       // Handle success response
       if (response.data.success) {
-        toast.success(response.data.message || "Astrologer deleted successfully!"); // Show success toast
+        toast.success(
+          response.data.message || 'Astrologer deleted successfully!',
+        ); // Show success toast
         setIsDeleteModalOpen(false); // Close the delete modal
 
         // Update the local state by removing the deleted user
-        const updatedUsers = allUsers.filter((user) => user._id !== selectedUser);
+        const updatedUsers = allUsers.filter(
+          (user) => user._id !== selectedUser,
+        );
         setAllUsers(updatedUsers);
         setFilteredUsers(updatedUsers);
       } else {
-        toast.error("Something went wrong. Please try again."); // Show error toast if success is false
+        toast.error('Something went wrong. Please try again.'); // Show error toast if success is false
       }
     } catch (error) {
       // Handle error
-      console.error("Error deleting astrologer:", error);
-      toast.error("Something went wrong. Please try again."); // Show error toast
+      console.error('Error deleting astrologer:', error);
+      toast.error('Something went wrong. Please try again.'); // Show error toast
     }
   };
-
 
   // Handle form submission for editing
   const handleEditSubmit = async (e) => {
@@ -139,48 +143,53 @@ const ManageAIAstrologer = () => {
       // Make a POST request to update the astrologer
       const response = await axiosInstance.post(
         `/admin/edit/ai/astrologer/${selectedUser._id}`, // Use selectedUser._id as the astrologerId
-        selectedUser // Send the selectedUser object as the payload
+        selectedUser, // Send the selectedUser object as the payload
       );
 
       if (response.data.success) {
-        toast.success(response.data.message || "Astrologer updated successfully!"); // Show success toast
+        toast.success(
+          response.data.message || 'Astrologer updated successfully!',
+        ); // Show success toast
         setIsEditModalOpen(false); // Close the modal after successful update
 
         // Optionally, update the local state or refetch the data
         const updatedUsers = allUsers.map((user) =>
-          user._id === selectedUser._id ? response.data.data : user
+          user._id === selectedUser._id ? response.data.data : user,
         );
         setAllUsers(updatedUsers);
         setFilteredUsers(updatedUsers);
       } else {
-        toast.error("Something went wrong. Please try again."); // Show error toast if success is false
+        toast.error('Something went wrong. Please try again.'); // Show error toast if success is false
       }
 
       // Handle success response
     } catch (error) {
       // Handle error
-      console.error("Error updating astrologer:", error);
+      console.error('Error updating astrologer:', error);
     }
   };
 
-  const CLOUDINARY_CLOUD_NAME = "dlol2hjj8";
+  const CLOUDINARY_CLOUD_NAME = 'dlol2hjj8';
   const handlePhotoChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
     setUploading(true);
     const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", "admin_photos_user");
+    formData.append('file', file);
+    formData.append('upload_preset', 'admin_photos_user');
 
     try {
       const response = await axios.post(
         `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-        formData
+        formData,
       );
-      setSelectedUser(prevData => ({ ...prevData, avatar: response.data.secure_url }));
+      setSelectedUser((prevData) => ({
+        ...prevData,
+        avatar: response.data.secure_url,
+      }));
     } catch (error) {
-      console.error("Error uploading photo:", error);
+      console.error('Error uploading photo:', error);
     } finally {
       setUploading(false);
     }
@@ -191,54 +200,61 @@ const ManageAIAstrologer = () => {
 
     setUploading(true);
     const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", "admin_photos_user");
+    formData.append('file', file);
+    formData.append('upload_preset', 'admin_photos_user');
 
     try {
       const response = await axios.post(
         `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-        formData
+        formData,
       );
-      setNewUser(prevData => ({ ...prevData, avatar: response.data.secure_url }));
+      setNewUser((prevData) => ({
+        ...prevData,
+        avatar: response.data.secure_url,
+      }));
     } catch (error) {
-      console.error("Error uploading photo:", error);
+      console.error('Error uploading photo:', error);
     } finally {
       setUploading(false);
     }
   };
 
-
   const handleAddAstrologerSubmit = async (e) => {
     e.preventDefault(); // Prevent default form submission behavior
-  
+
     // Clean up the specialities array by removing empty strings
-    const cleanedSpecialities = newUser.specialities.filter(speciality => speciality.trim() !== "");
-  
+    const cleanedSpecialities = newUser.specialities.filter(
+      (speciality) => speciality.trim() !== '',
+    );
+
     // Update the newUser object with the cleaned specialities array
     const updatedNewUser = { ...newUser, specialities: cleanedSpecialities };
-  
+
     try {
       // Send the cleaned new astrologer data to the API
-      const response = await axiosInstance.post('/admin/add/ai/astrologer', updatedNewUser);
-  
+      const response = await axiosInstance.post(
+        '/admin/add/ai/astrologer',
+        updatedNewUser,
+      );
+
       if (response.data.success) {
-        toast.success(response.data.message || "AI Astrologer added successfully!"); // Show success toast
+        toast.success(
+          response.data.message || 'AI Astrologer added successfully!',
+        ); // Show success toast
         setIsAddModalOpen(false); // Close the modal
-  
+
         // Optionally, add the new astrologer to the state
         const updatedUsers = [...allUsers, response.data.data];
         setAllUsers(updatedUsers);
         setFilteredUsers(updatedUsers);
       } else {
-        toast.error("Something went wrong. Please try again."); // Show error toast
+        toast.error('Something went wrong. Please try again.'); // Show error toast
       }
     } catch (error) {
-      console.error("Error adding astrologer:", error);
-      toast.error("Something went wrong. Please try again."); // Show error toast
+      console.error('Error adding astrologer:', error);
+      toast.error('Something went wrong. Please try again.'); // Show error toast
     }
   };
-  
-
 
   return (
     <>
@@ -325,11 +341,14 @@ const ManageAIAstrologer = () => {
             <div className="flex items-center col-span-2 sm:col-span-2">
               <div className="flex gap-4 items-center">
                 <img
+                  className="w-16 h-16 rounded-full"
                   src={user.avatar}
-                  alt="User Profile"
-                  className="h-12 w-12 rounded-full"
+                  alt=""
                 />
-                <p className="text-sm text-black dark:text-white">{user.name}</p>
+                 <span className="top-0 left-7 absolute  w-3.5 h-3.5 bg-green-400 border-2 border-white dark:border-gray-800 rounded-full"></span>
+                <p className="text-sm text-black dark:text-white">
+                  {user.name}
+                </p>
               </div>
             </div>
 
@@ -343,7 +362,7 @@ const ManageAIAstrologer = () => {
             {/* Specialities */}
             <div className="flex items-center justify-center col-span-1">
               <p className="text-sm text-black dark:text-white">
-                {user.specialities.join(", ")}
+                {user.specialities.join(', ')}
               </p>
             </div>
 
@@ -357,7 +376,7 @@ const ManageAIAstrologer = () => {
             {/* Verified */}
             <div className="flex items-center justify-center col-span-1">
               <p className="text-sm text-black dark:text-white">
-                {user.isVerified ? "Yes" : "No"}
+                {user.isVerified ? 'Yes' : 'No'}
               </p>
             </div>
 
@@ -379,20 +398,25 @@ const ManageAIAstrologer = () => {
           </div>
         ))}
 
-
         {/* Pagination */}
         <div className="flex justify-center py-6">
           <ReactPaginate
-            previousLabel={"Previous"}
-            nextLabel={"Next"}
+            previousLabel={'Previous'}
+            nextLabel={'Next'}
             pageCount={pageCount}
             onPageChange={handlePageClick}
-            containerClassName={"flex space-x-2"}
-            pageClassName={"px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"}
-            activeClassName={"bg-blue-300 dark:bg-blue-400 text-white"}
-            previousClassName={"px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"}
-            nextClassName={"px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"}
-            disabledClassName={"opacity-50 cursor-not-allowed"}
+            containerClassName={'flex space-x-2'}
+            pageClassName={
+              'px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400'
+            }
+            activeClassName={'bg-blue-300 dark:bg-blue-400 text-white'}
+            previousClassName={
+              'px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400'
+            }
+            nextClassName={
+              'px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400'
+            }
+            disabledClassName={'opacity-50 cursor-not-allowed'}
           />
         </div>
       </div>
@@ -406,7 +430,9 @@ const ManageAIAstrologer = () => {
               <div className="grid grid-cols-2 gap-4">
                 {/* Avatar Image and Upload */}
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium mb-1">Avatar</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Avatar
+                  </label>
                   {uploading && (
                     <p className="text-sm text-gray-500">Uploading...</p>
                   )}
@@ -415,7 +441,6 @@ const ManageAIAstrologer = () => {
                     <img
                       src={selectedUser.avatar}
                       alt="Avatar"
-
                       className="h-16 w-16 rounded-full object-cover"
                     />
                     {/* File Input for Upload */}
@@ -466,11 +491,11 @@ const ManageAIAstrologer = () => {
                   </label>
                   <input
                     type="text"
-                    value={selectedUser.specialities.join(", ")}
+                    value={selectedUser.specialities.join(', ')}
                     onChange={(e) =>
                       setSelectedUser({
                         ...selectedUser,
-                        specialities: e.target.value.split(", "),
+                        specialities: e.target.value.split(', '),
                       })
                     }
                     className="w-full p-2 border border-stroke rounded-md"
@@ -479,7 +504,9 @@ const ManageAIAstrologer = () => {
 
                 {/* Rating */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">Rating</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Rating
+                  </label>
                   <input
                     type="number"
                     value={selectedUser.rating}
@@ -487,7 +514,6 @@ const ManageAIAstrologer = () => {
                     className="w-full p-2 border border-stroke rounded-md"
                   />
                 </div>
-
 
                 {/* Price Per Call Minute */}
                 <div>
@@ -525,16 +551,57 @@ const ManageAIAstrologer = () => {
                   />
                 </div>
 
-
                 {/* Verified */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">Verified</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Verified
+                  </label>
                   <select
-                    value={selectedUser.isVerified ? "Yes" : "No"}
+                    value={selectedUser.isVerified ? 'Yes' : 'No'}
                     onChange={(e) =>
                       setSelectedUser({
                         ...selectedUser,
-                        isVerified: e.target.value === "Yes",
+                        isVerified: e.target.value === 'Yes',
+                      })
+                    }
+                    className="w-full p-2 border border-stroke rounded-md"
+                  >
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+
+                {/* Is Available */}
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Available
+                  </label>
+                  <select
+                    value={newUser.isAvailable ? 'Yes' : 'No'}
+                    onChange={(e) =>
+                      setNewUser({
+                        ...newUser,
+                        isAvailable: e.target.value === 'Yes',
+                      })
+                    }
+                    className="w-full p-2 border border-stroke rounded-md"
+                  >
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+
+                {/* Is Featured */}
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Featured
+                  </label>
+                  <select
+                    value={newUser.isFeatured ? 'Yes' : 'No'}
+                    onChange={(e) =>
+                      setNewUser({
+                        ...newUser,
+                        isFeatured: e.target.value === 'Yes',
                       })
                     }
                     className="w-full p-2 border border-stroke rounded-md"
@@ -546,7 +613,9 @@ const ManageAIAstrologer = () => {
 
                 {/* Gender */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">Gender</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Gender
+                  </label>
                   <select
                     value={selectedUser.gender}
                     onChange={(e) =>
@@ -590,7 +659,7 @@ const ManageAIAstrologer = () => {
           <div className="bg-white dark:bg-boxdark rounded-lg p-6 w-full max-w-md">
             <h2 className="text-xl font-semibold mb-4">Delete Astrologer</h2>
             <p className="mb-6">
-              Are you sure you want to delete{" "}
+              Are you sure you want to delete{' '}
               <span className="font-bold">{selectedUser.name}</span>?
             </p>
             <div className="flex justify-end space-x-4">
@@ -620,16 +689,17 @@ const ManageAIAstrologer = () => {
               <div className="grid grid-cols-2 gap-4">
                 {/* Avatar Image and Upload */}
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium mb-1">Avatar</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Avatar
+                  </label>
                   {uploading && (
                     <p className="text-sm text-gray-500">Uploading...</p>
                   )}
                   <div className="flex items-center space-x-4">
                     {/* Display Current Avatar */}
                     <img
-                      src={newUser.avatar || ""}
+                      src={newUser.avatar || ''}
                       alt="Avatar"
-
                       className="h-16 w-16 rounded-full object-cover"
                     />
                     {/* File Input for Upload */}
@@ -647,7 +717,7 @@ const ManageAIAstrologer = () => {
                   <label className="block text-sm font-medium mb-1">Name</label>
                   <input
                     type="text"
-                    value={newUser.name || ""}
+                    value={newUser.name || ''}
                     onChange={(e) =>
                       setNewUser({ ...newUser, name: e.target.value })
                     }
@@ -662,7 +732,7 @@ const ManageAIAstrologer = () => {
                   </label>
                   <input
                     type="number"
-                    value={newUser.experience || ""}
+                    value={newUser.experience || ''}
                     onChange={(e) =>
                       setNewUser({
                         ...newUser,
@@ -680,11 +750,11 @@ const ManageAIAstrologer = () => {
                   </label>
                   <input
                     type="text"
-                    value={newUser.specialities.join(", ") || ""}
+                    value={newUser.specialities.join(', ') || ''}
                     onChange={(e) =>
                       setNewUser({
                         ...newUser,
-                        specialities: e.target.value.split(", "),
+                        specialities: e.target.value.split(', '),
                       })
                     }
                     className="w-full p-2 border border-stroke rounded-md"
@@ -693,17 +763,21 @@ const ManageAIAstrologer = () => {
 
                 {/* Rating */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">Rating</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Rating
+                  </label>
                   <input
                     type="number"
-                    value={newUser.rating || ""}
-                    onChange={(e) => setNewUser({
-                      ...newUser, rating:e.target.value
-                    })}
+                    value={newUser.rating || ''}
+                    onChange={(e) =>
+                      setNewUser({
+                        ...newUser,
+                        rating: e.target.value,
+                      })
+                    }
                     className="w-full p-2 border border-stroke rounded-md"
                   />
                 </div>
-
 
                 {/* Price Per Call Minute */}
                 <div>
@@ -712,7 +786,7 @@ const ManageAIAstrologer = () => {
                   </label>
                   <input
                     type="number"
-                    value={newUser.pricePerCallMinute || ""}
+                    value={newUser.pricePerCallMinute || ''}
                     onChange={(e) =>
                       setNewUser({
                         ...newUser,
@@ -730,8 +804,7 @@ const ManageAIAstrologer = () => {
                   </label>
                   <input
                     type="number"
-                    value={newUser.pricePerChatMinute || ""
-                    }
+                    value={newUser.pricePerChatMinute || ''}
                     onChange={(e) =>
                       setNewUser({
                         ...newUser,
@@ -742,16 +815,57 @@ const ManageAIAstrologer = () => {
                   />
                 </div>
 
-
                 {/* Verified */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">Verified</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Verified
+                  </label>
                   <select
-                    value={newUser.isVerified ? "Yes" : "No"}
+                    value={newUser.isVerified ? 'Yes' : 'No'}
                     onChange={(e) =>
                       setNewUser({
                         ...newUser,
-                        isVerified: e.target.value === "Yes",
+                        isVerified: e.target.value === 'Yes',
+                      })
+                    }
+                    className="w-full p-2 border border-stroke rounded-md"
+                  >
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+
+                {/* Is Available */}
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Available
+                  </label>
+                  <select
+                    value={newUser.isAvailable ? 'Yes' : 'No'}
+                    onChange={(e) =>
+                      setNewUser({
+                        ...newUser,
+                        isAvailable: e.target.value === 'Yes',
+                      })
+                    }
+                    className="w-full p-2 border border-stroke rounded-md"
+                  >
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+
+                {/* Is Featured */}
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Featured
+                  </label>
+                  <select
+                    value={newUser.isFeatured ? 'Yes' : 'No'}
+                    onChange={(e) =>
+                      setNewUser({
+                        ...newUser,
+                        isFeatured: e.target.value === 'Yes',
                       })
                     }
                     className="w-full p-2 border border-stroke rounded-md"
@@ -763,9 +877,11 @@ const ManageAIAstrologer = () => {
 
                 {/* Gender */}
                 <div>
-                  <label className="block text-sm font-medium mb-1">Gender</label>
+                  <label className="block text-sm font-medium mb-1">
+                    Gender
+                  </label>
                   <select
-                    value={newUser.gender || ""}
+                    value={newUser.gender || ''}
                     onChange={(e) =>
                       setNewUser({
                         ...newUser,
