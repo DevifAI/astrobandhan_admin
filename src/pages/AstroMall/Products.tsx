@@ -1,9 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Breadcrumb from '../../components/Breadcrumbs/Breadcrumb';
 import { Product } from '../../types/Products.ts';
 import ProductModal from '../../components/Modals/ProductModal.tsx';
 import axiosInstance from '../../utils/axiosInstance.ts';
 import axios from 'axios';
+import ReactPaginate from 'react-paginate';
+import toast, { Toaster } from 'react-hot-toast';
+import { Category } from '../../types/categoryTypes.ts';
 
 const Products: React.FC = () => {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -15,7 +18,7 @@ const Products: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [currentPage, setCurrentPage] = useState<number>(0);
   const rowsPerPage = 10;
 
   const fetchCategories = async () => {
@@ -57,27 +60,23 @@ const Products: React.FC = () => {
     }
   };
 
-  // Filter products on search/category change
-  useEffect(() => {
-    let filtered = [...allProducts];
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase();
-      filtered = filtered.filter((p) => p.productName.toLowerCase().includes(q));
-    }
-
-    if (selectedCategory) {
-      filtered = filtered.filter((p) => p.category?._id === selectedCategory);
-    }
-
-    setFilteredProducts(filtered);
-    setCurrentPage(1); // reset to first page when filter changes
-  }, [searchQuery, selectedCategory, allProducts]);
-
   useEffect(() => {
     fetchProducts();
     fetchCategories();
   }, []);
+
+  useEffect(() => {
+    let filtered = [...allProducts];
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter((p) => p.productName.toLowerCase().includes(q));
+    }
+    if (selectedCategory) {
+      filtered = filtered.filter((p) => p.category?._id === selectedCategory);
+    }
+    setFilteredProducts(filtered);
+    setCurrentPage(0); // reset to first page on filter change
+  }, [searchQuery, selectedCategory, allProducts]);
 
   const handleProductCreatedOrUpdated = () => {
     fetchProducts();
@@ -85,21 +84,22 @@ const Products: React.FC = () => {
     setEditProduct(null);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteProduct = useCallback(async (id: string) => {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
     try {
       await axiosInstance.delete(`/product/delete/${id}`);
+      toast.success('Product deleted successfully');
       fetchProducts();
     } catch {
-      alert('Failed to delete the product.');
+      toast.error('Failed to delete the product.');
     }
-  };
+  }, []);
 
-  const paginatedProducts = filteredProducts.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage
-  );
   const totalPages = Math.ceil(filteredProducts.length / rowsPerPage);
+  const paginatedProducts = filteredProducts.slice(
+    currentPage * rowsPerPage,
+    (currentPage + 1) * rowsPerPage
+  );
 
   return (
     <>
@@ -184,7 +184,7 @@ const Products: React.FC = () => {
                     Edit
                   </button>
                   <button
-                    onClick={() => handleDelete(product._id)}
+                    onClick={() => handleDeleteProduct(product._id)}
                     className="text-red-500 hover:text-red-700"
                   >
                     Delete
@@ -192,29 +192,23 @@ const Products: React.FC = () => {
                 </div>
               </div>
             ))}
-          </>
-        )}
 
-        {!loading && totalPages > 1 && (
-          <div className="flex justify-center items-center py-4 gap-2">
-            <button
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1 border rounded disabled:opacity-50"
-            >
-              Prev
-            </button>
-            <span>
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1 border rounded disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
+            <div className="flex justify-center py-6">
+              <ReactPaginate
+                previousLabel={'Previous'}
+                nextLabel={'Next'}
+                pageCount={totalPages}
+                onPageChange={(event) => setCurrentPage(event.selected)}
+                forcePage={currentPage}
+                containerClassName="flex space-x-2"
+                pageClassName="px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"
+                activeClassName="bg-blue-300 dark:bg-blue-400 text-white"
+                previousClassName="px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"
+                nextClassName="px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"
+                disabledClassName="opacity-50 cursor-not-allowed"
+              />
+            </div>
+          </>
         )}
 
         {showModal && (
@@ -228,6 +222,8 @@ const Products: React.FC = () => {
           />
         )}
       </div>
+
+      <Toaster position="top-right" reverseOrder={false} />
     </>
   );
 };

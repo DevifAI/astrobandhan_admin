@@ -19,7 +19,6 @@ const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
     const [uploading, setUploading] = useState(false);
 
     const CLOUDINARY_CLOUD_NAME = "dlol2hjj8";
-
     const steps = 3;
 
     const handleInputChange = (e) => {
@@ -32,16 +31,16 @@ const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
         if (!file) return;
 
         setUploading(true);
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("upload_preset", "admin_photos_user");
+        const data = new FormData();
+        data.append("file", file);
+        data.append("upload_preset", "admin_photos_user");
 
         try {
             const response = await axios.post(
                 `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
-                formData
+                data
             );
-            setFormData(prevData => ({ ...prevData, photo: response.data.secure_url }));
+            setFormData(prev => ({ ...prev, photo: response.data.secure_url }));
         } catch (error) {
             console.error("Error uploading photo:", error);
         } finally {
@@ -49,7 +48,24 @@ const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
         }
     };
 
+    const validateStep = () => {
+        if (currentStep === 1) {
+            return formData.name && formData.email && formData.phone;
+        }
+        if (currentStep === 2) {
+            return formData.dateOfBirth && formData.placeOfBirth;
+        }
+        if (currentStep === 3) {
+            return formData.gender && formData.password;
+        }
+        return true;
+    };
+
     const handleNext = () => {
+        if (!validateStep()) {
+            toast.error("Please fill in all required fields before continuing.");
+            return;
+        }
         if (currentStep < steps) setCurrentStep(currentStep + 1);
     };
 
@@ -60,24 +76,22 @@ const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Check if all fields are filled
         const isFormValid = Object.values(formData).every(value => value !== "" && value !== null);
 
         if (!isFormValid) {
-            setIsAddCustomerAdded({ status: true, message: "Form Validation Failed"|| "" })
-            return; // Prevent submission if any field is missing
+            setIsAddCustomerAdded({ status: true, message: "Form Validation Failed" });
+            return;
         }
 
         try {
             const response = await axiosInstance.post("/user/signup", formData);
-
             if (response.data.status === 200) {
-                setIsAddCustomerAdded({ status: false, message: response.data.message || "" })
-            } else if (response.data.status === 201 && (response.data.message === "This number is already used by an astrologer" || response.data.message === "User already registered" || response.data.message === "Invalid phone number format." || response.data.message === "Phone number is required")) {
-                // Display the error message from the server using toast
-                // toast.error(response.message);
-                setIsAddCustomerAdded({ status: true, message: response.message || ""});
+                toast.success("User Registered Successfully")
+                // setIsAddCustomerAdded({ status: false, message: response.data.message });
+            } else {
+                setIsAddCustomerAdded({ status: true, message: response.data.message });
             }
+
             setFormData({
                 name: "",
                 email: "",
@@ -88,16 +102,14 @@ const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
                 gender: "",
                 password: "",
                 photo: null,
-            })
-            setCurrentStep(1)
+            });
+            setCurrentStep(1);
             onClose();
         } catch (error) {
-            console.error("Error submitting customer data:", error.response?.data || error.message);
+            toast.error(error.response?.data?.message || "Something went wrong.");
+            console.error("Submission Error:", error.response?.data?.message);
         }
     };
-
-
-    // console.log({ formData })
 
     if (!isOpen) return null;
 
@@ -197,7 +209,7 @@ const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
                                 </select>
                             </div>
                             <div className="mb-4">
-                                <label className="block mb-1">Photo</label>
+                                <label className="block mb-1">Photo <span className="text-red-500">*</span></label>
                                 <input
                                     type="file"
                                     accept="image/*"
@@ -230,7 +242,7 @@ const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
                             </div>
                         </>
                     )}
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center mt-4">
                         {currentStep > 1 && (
                             <button
                                 type="button"
@@ -256,26 +268,25 @@ const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
                                             gender: "",
                                             password: "",
                                             photo: null,
-                                        })
-                                        onClose()
+                                        });
+                                        onClose();
                                     }}
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="button"
-                                    className="bg-blue-500 text-white px-4 py-2 rounded"
+                                    className="bg-blue-600 text-white px-4 py-2 rounded"
                                     onClick={handleNext}
                                 >
                                     Next
                                 </button>
                             </>
-
                         )}
                         {currentStep === steps && (
                             <button
                                 type="submit"
-                                className="bg-green-500 text-white px-4 py-2 rounded"
+                                className="bg-green-600 text-white px-4 py-2 rounded"
                                 disabled={uploading}
                             >
                                 Submit
@@ -285,7 +296,6 @@ const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
                 </form>
             </div>
         </div>
-
     );
 };
 

@@ -88,7 +88,7 @@ const Profile = () => {
           <div className="relative z-30 mx-auto -mt-22 h-30 w-full max-w-30 rounded-full bg-white/20 p-1 backdrop-blur sm:h-44 sm:max-w-44 sm:p-3">
             <div className="relative drop-shadow-2">
               <img src={adminProfile.avatar} alt="profile" className="w-full h-full object-cover" />
-              <label
+              {/* <label
                 htmlFor="profile"
                 className="absolute bottom-0 right-0 flex h-8.5 w-8.5 cursor-pointer items-center justify-center rounded-full bg-primary text-white hover:bg-opacity-90 sm:bottom-2 sm:right-2"
               >
@@ -119,7 +119,7 @@ const Profile = () => {
                   id="profile"
                   className="sr-only"
                 />
-              </label>
+              </label> */}
             </div>
           </div>
           <div className="mt-4">
@@ -146,6 +146,7 @@ const Profile = () => {
                 </span>
                 <span className="text-sm">Earnings</span>
               </div>
+             
             </div>
 
             <div className="mx-auto max-w-180">

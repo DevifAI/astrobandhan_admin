@@ -45,7 +45,7 @@ const VideoCallHistory = () => {
   };
 
   const openModal = (fileName) => {
-    const fileUrl = `https://astrobandhan.s3.ap-south-1.amazonaws.com/${fileName}`;
+    const fileUrl = `https://s3.ap-south-1.amazonaws.com/rudraganga2.0/${fileName}`;
     setCurrentFile(fileUrl);
     setShowModal(true); // Open the modal
   };

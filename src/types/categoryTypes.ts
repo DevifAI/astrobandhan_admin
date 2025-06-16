@@ -1,4 +1,5 @@
 export type Category = {
+    imageUrl: string;
     _id: string;
     category_name: string;
     totalItems?: number;

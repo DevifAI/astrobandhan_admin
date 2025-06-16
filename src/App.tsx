@@ -18,7 +18,7 @@ import Buttons from './pages/UiElements/Buttons';
 import DefaultLayout from './layout/DefaultLayout';
 import Customer from './pages/Customer';
 import ManageAstrologer from './pages/Astrologers/ManageAstrologer';
-import PendingRequest from './pages/Astrologers/PendingRequest';
+import PendingRequest from './pages/Astrologers/AstroLanguages';
 import BannerManagement from './pages/BannerManagement';
 import SendNotifications from './pages/SendNotifications';
 import CreditHistory from './pages/WalletHistory/CreditHistory';
@@ -33,6 +33,7 @@ import Categories from './pages/AstroMall/Categories';
 import Orders from './pages/AstroMall/Orders';
 import ManageAIAstrologer from './pages/Astrologers/ManageAIAstrologers';
 import ComingSoon from './pages/ComingSoon';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   const [loading, setLoading] = useState<boolean>(true);
@@ -40,17 +41,17 @@ function App() {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
-useEffect(() => {
+  useEffect(() => {
 
-  const user = localStorage.getItem('User');
-  if (!user) {
-    
-    navigate('/auth/signin');
-  } else {
-    
-    setIsAuthenticated(true);
-  }
-}, [navigate]);
+    const user = localStorage.getItem('User');
+    if (!user) {
+
+      navigate('/auth/signin');
+    } else {
+
+      setIsAuthenticated(true);
+    }
+  }, [navigate]);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -66,6 +67,7 @@ useEffect(() => {
 
   return isAuthenticated ? (
     <DefaultLayout>
+
       <Routes>
         <Route
           index
@@ -76,7 +78,7 @@ useEffect(() => {
             </>
           }
         />
-        <Route
+        {/* <Route
           path="/calendar"
           element={
             <>
@@ -84,7 +86,7 @@ useEffect(() => {
               <Calendar />
             </>
           }
-        />
+        /> */}
         <Route
           path="/profile"
           element={
@@ -113,7 +115,7 @@ useEffect(() => {
           }
         />
         <Route
-          path="/astrologers/pendingRequest"
+          path="/astrologers/languages"
           element={
             <>
               <PageTitle title=" Astrologers Pending Request | Astro Bandhan" />
@@ -145,7 +147,7 @@ useEffect(() => {
           element={
             <>
               <PageTitle title=" Astrologers Send Notifications | Astro Bandhan" />
-             <ComingSoon/>
+              <ComingSoon />
             </>
           }
         />
@@ -286,22 +288,23 @@ useEffect(() => {
             </>
           }
         />
-       
+
       </Routes>
+      <Toaster />
     </DefaultLayout>
   ) : (
     <Routes>
-    <Route
-    path="/auth/signin"
-    element={
-      <>
-        <PageTitle title="Signin | Astro Bandhan" />
-        <SignIn />
-      </>
-    }
-  />
- 
-  </Routes>
+      <Route
+        path="/auth/signin"
+        element={
+          <>
+            <PageTitle title="Signin | Astro Bandhan" />
+            <SignIn />
+          </>
+        }
+      />
+
+    </Routes>
   )
 }
 

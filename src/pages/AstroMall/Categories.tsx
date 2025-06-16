@@ -14,6 +14,30 @@ const Categories = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
+
+
+  // console.log(categories);
+
+  const handleDateChange = (field: "from" | "to", value: string) => {
+    if (field === "from") {
+      setFromDate(value);
+      if (toDate && new Date(value) > new Date(toDate)) {
+        setDateError("The 'From' date cannot be later than the 'To' date.");
+      } else {
+        setDateError(null);
+      }
+    } else {
+      setToDate(value);
+      if (fromDate && new Date(fromDate) > new Date(value)) {
+        setDateError("The 'To' date cannot be earlier than the 'From' date.");
+      } else {
+        setDateError(null);
+      }
+    }
+  };
+
+  console.log({ selectedCategory })
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
@@ -35,7 +59,7 @@ const Categories = () => {
 
   useEffect(() => {
     fetchCategories();
-  }, []);
+  }, [isModalOpen]);
 
   useEffect(() => {
     const filtered = categories.filter((cat) =>
@@ -124,6 +148,9 @@ const Categories = () => {
         </div>
 
         {/* Table Body */}
+        {dateError && (
+          <p className="text-red-500 text-sm font-medium">{dateError}</p>
+        )}
         {loading ? (
           <div className="text-center py-4">Loading...</div>
         ) : error ? (

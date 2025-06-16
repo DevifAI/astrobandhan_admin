@@ -2,6 +2,11 @@ import React, { useState, ChangeEvent, useEffect } from 'react';
 import { Product } from '../../types/Products';
 import axiosInstance from '../../utils/axiosInstance';
 import { Category } from '../../types/categoryTypes';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+const CLOUDINARY_CLOUD_NAME = 'dlol2hjj8';
 
 interface ProductModalProps {
   product: Product | null;
@@ -31,6 +36,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
     material: '',
     in_stock: true,
     contains: [],
+    image: '',
+    rating: 0,
+    isTrending: false,
   });
 
   const [categories, setCategories] = useState<Category[]>([]);
@@ -38,11 +46,12 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const [image, setImage] = useState<string>('');
   const [newContainsItem, setNewContainsItem] = useState<string>('');
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (product) {
       setFormData(product);
-      if (product.image) setImage(product.image); // show image preview if already uploaded
+      if (product.image) setImage(product.image);
     }
   }, [product]);
 
@@ -55,6 +64,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
         }
       } catch (err) {
         console.error('Error fetching categories:', err);
+        toast.error('Failed to fetch categories');
       }
     };
     fetchCategories();
@@ -83,15 +93,73 @@ const ProductModal: React.FC<ProductModalProps> = ({
     }));
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.match('image.*')) {
+      toast.error('Please select an image file (JPEG, PNG, etc.)');
+      return;
+    }
+
+    // Validate file size (e.g., 5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image size should be less than 5MB');
+      return;
+    }
+
+    setImageFile(file);
+    setUploading(true);
+
+    try {
+      // Display preview
       const reader = new FileReader();
       reader.onload = (event) => {
-        setImage(event.target?.result as string);
+        if (event.target?.result) {
+          setImage(event.target.result as string);
+        }
       };
       reader.readAsDataURL(file);
+
+      // Upload to Cloudinary
+      const cloudinaryFormData = new FormData();
+      cloudinaryFormData.append('file', file);
+      cloudinaryFormData.append('upload_preset', 'admin_photos_user');
+
+      const cloudinaryResponse = await axios.post(
+        `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`,
+        cloudinaryFormData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          onUploadProgress: (progressEvent) => {
+            // Optional: Add progress tracking
+            const percentCompleted = Math.round(
+              (progressEvent.loaded * 100) / (progressEvent.total || 1),
+            );
+            console.log(`Upload progress: ${percentCompleted}%`);
+          },
+        },
+      );
+
+      if (!cloudinaryResponse.data.secure_url) {
+        throw new Error('No image URL returned from Cloudinary');
+      }
+
+      setFormData((prev) => ({
+        ...prev,
+        image: cloudinaryResponse.data.secure_url, // Fixed: was using imageUrl but formData uses image
+      }));
+    } catch (error) {
+      console.error('Image upload error:', error);
+      toast.error('Failed to upload image. Please try again.');
+      // Reset image state on error
+      setImage('');
+      setImageFile(null);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -116,39 +184,22 @@ const ProductModal: React.FC<ProductModalProps> = ({
     e.preventDefault();
     setLoading(true);
 
-    const formDataToSubmit = new FormData();
-
     try {
-      if (formData.productName)
-        formDataToSubmit.append('productName', formData.productName);
-      if (formData.productDescription)
-        formDataToSubmit.append(
-          'productDescription',
-          formData.productDescription,
-        );
-      if (formData.category && typeof formData.category === 'object') {
-        formDataToSubmit.append('category', formData.category._id);
-      }
-      if (formData.originalPrice !== undefined) {
-        formDataToSubmit.append(
-          'originalPrice',
-          String(formData.originalPrice),
-        );
-      }
-      if (formData.displayPrice !== undefined) {
-        formDataToSubmit.append('displayPrice', String(formData.displayPrice));
-      }
-      if (formData.brand) formDataToSubmit.append('brand', formData.brand);
-      if (formData.weight) formDataToSubmit.append('weight', formData.weight);
-      if (formData.material)
-        formDataToSubmit.append('material', formData.material);
-      formDataToSubmit.append('in_stock', formData.in_stock ? 'true' : 'false');
-      formDataToSubmit.append(
-        'contains',
-        JSON.stringify(formData.contains || []),
-      );
+      const payload = {
+        productName: formData.productName,
+        productDescription: formData.productDescription,
+        category: formData.category?._id,
+        originalPrice: formData.originalPrice,
+        displayPrice: formData.displayPrice,
+        brand: formData.brand,
+        weight: formData.weight,
+        material: formData.material,
+        in_stock: formData.in_stock,
+        contains: formData.contains,
+        image: formData.image,
+      };
 
-      if (imageFile) formDataToSubmit.append('image', imageFile);
+      console.log('Submitting product data:', payload);
 
       const url = product
         ? `/product/update/${product._id}`
@@ -156,17 +207,19 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
       const method = product ? axiosInstance.put : axiosInstance.post;
 
-      const res = await method(url, formDataToSubmit, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      const res = await method(url, payload);
 
-      // update parent with fresh data
       onProductCreated(res.data?.data || res.data);
       onClose();
+      toast.success(
+        product
+          ? 'Product updated successfully'
+          : 'Product created successfully',
+      );
     } catch (error: any) {
       const message =
         error?.response?.data?.message || error?.message || 'Unknown error';
-      alert(`Error: ${message}`);
+      toast.error(`Error: ${message}`);
       console.error('Submission error:', error);
     } finally {
       setLoading(false);
@@ -207,6 +260,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                     onClick={() => {
                       setImage('');
                       setImageFile(null);
+                      setFormData((prev) => ({ ...prev, image: '' }));
                     }}
                     className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full"
                   >
@@ -221,12 +275,17 @@ const ProductModal: React.FC<ProductModalProps> = ({
                     onChange={handleImageChange}
                     className="hidden"
                     id="imgUpload"
+                    disabled={uploading}
                   />
                   <label
                     htmlFor="imgUpload"
-                    className="cursor-pointer text-blue-600 dark:text-blue-300"
+                    className={`cursor-pointer ${
+                      uploading
+                        ? 'text-gray-400'
+                        : 'text-blue-600 dark:text-blue-300'
+                    }`}
                   >
-                    Upload Product Image
+                    {uploading ? 'Uploading...' : 'Upload Product Image'}
                   </label>
                 </>
               )}
@@ -268,6 +327,24 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   </option>
                 ))}
               </select>
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  name="in_stock"
+                  id="in_stock"
+                  checked={formData.in_stock || false}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      in_stock: e.target.checked,
+                    }))
+                  }
+                  className="mr-2"
+                />
+                <label htmlFor="in_stock" className="dark:text-white">
+                  In Stock
+                </label>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -278,6 +355,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 value={formData.originalPrice || ''}
                 onChange={handleChange}
                 required
+                min="0"
+                step="0.01"
                 className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
               />
               <input
@@ -287,6 +366,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 value={formData.displayPrice || ''}
                 onChange={handleChange}
                 required
+                min="0"
+                step="0.01"
                 className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
               />
               <input
@@ -294,6 +375,22 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 name="brand"
                 placeholder="Brand"
                 value={formData.brand || ''}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+              />
+              <input
+                type="text"
+                name="weight"
+                placeholder="Weight"
+                value={formData.weight || ''}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+              />
+              <input
+                type="text"
+                name="material"
+                placeholder="Material"
+                value={formData.material || ''}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
               />
@@ -310,32 +407,41 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 type="text"
                 value={newContainsItem}
                 onChange={(e) => setNewContainsItem(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleAddContainsItem()}
                 className="flex-grow px-3 py-2 border rounded-l-lg dark:bg-gray-700 dark:border-gray-600"
+                placeholder="Add an item"
               />
               <button
                 type="button"
                 onClick={handleAddContainsItem}
-                className="px-4 py-2 bg-blue-500 text-white rounded-r-lg"
+                disabled={!newContainsItem.trim()}
+                className="px-4 py-2 bg-blue-500 text-white rounded-r-lg disabled:bg-blue-300"
               >
                 Add
               </button>
             </div>
             <div className="max-h-32 overflow-y-auto border p-2 rounded-md dark:bg-gray-800">
-              {formData.contains?.map((item, idx) => (
-                <div
-                  key={idx}
-                  className="flex justify-between items-center p-1 bg-gray-100 dark:bg-gray-700 mb-1 rounded"
-                >
-                  <span>{item}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveContainsItem(idx)}
-                    className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900 p-1 rounded-full"
+              {formData.contains?.length ? (
+                formData.contains.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="flex justify-between items-center p-1 bg-gray-100 dark:bg-gray-700 mb-1 rounded"
                   >
-                    ×
-                  </button>
-                </div>
-              ))}
+                    <span className="dark:text-white">{item}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveContainsItem(idx)}
+                      className="text-red-500 hover:bg-red-100 dark:hover:bg-red-900 p-1 rounded-full"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 dark:text-gray-400 text-center py-2">
+                  No items added
+                </p>
+              )}
             </div>
           </div>
 
@@ -348,18 +454,11 @@ const ProductModal: React.FC<ProductModalProps> = ({
             >
               Cancel
             </button>
-            {/* <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              {product ? 'Update Product' : 'Create Product'}
-            </button> */}
-
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || uploading}
               className={`px-4 py-2 rounded-lg text-white ${
-                loading
+                loading || uploading
                   ? 'bg-gray-400 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-700'
               }`}
