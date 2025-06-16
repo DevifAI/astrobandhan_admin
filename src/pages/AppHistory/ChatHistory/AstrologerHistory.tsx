@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
-import Breadcrumb from "../../../components/Breadcrumbs/Breadcrumb";
-import ChatModal from "../../../components/Modals/ChatHistoryModal";
-import axiosInstance from "../../../utils/axiosInstance";
-import ReactPaginate from "react-paginate";
+import { useState, useEffect } from 'react';
+import Breadcrumb from '../../../components/Breadcrumbs/Breadcrumb';
+import ChatModal from '../../../components/Modals/ChatHistoryModal';
+import axiosInstance from '../../../utils/axiosInstance';
+import ReactPaginate from 'react-paginate';
 // import "./Pagination.css"; // Optional: Custom styles for pagination
 
 const AstrologerHistory = () => {
@@ -10,17 +10,17 @@ const AstrologerHistory = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const [chatDetails, setChatDetails] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
-  const [fromDate, setFromDate] = useState("");  // Track the "from" date
-  const [toDate, setToDate] = useState("");      // Track the "to" date
-  const itemsPerPage = 3; // Number of items per page
+  const [fromDate, setFromDate] = useState(''); // Track the "from" date
+  const [toDate, setToDate] = useState(''); // Track the "to" date
+  const itemsPerPage = 10; // Number of items per page
 
   useEffect(() => {
     const fetchChatHistory = async () => {
       try {
-        const response = await axiosInstance.post("/admin/get/chat/history");
+        const response = await axiosInstance.post('/admin/get/chat/history');
         setChatDetails(response.data);
       } catch (error) {
-        console.error("Error fetching chat history:", error);
+        console.error('Error fetching chat history:', error);
       }
     };
 
@@ -34,29 +34,32 @@ const AstrologerHistory = () => {
       return;
     }
 
-    let newFromDate = fromDate.split("-").reverse().join("-")
-    let newToDate = toDate.split("-").reverse().join("-")
+    let newFromDate = fromDate.split('-').reverse().join('-');
+    let newToDate = toDate.split('-').reverse().join('-');
 
     try {
-      const response = await axiosInstance.post("/admin/get/chat/history/bydate", {
-        newFromDate,
-        newToDate
-      });
+      const response = await axiosInstance.post(
+        '/admin/get/chat/history/bydate',
+        {
+          newFromDate,
+          newToDate,
+        },
+      );
       setChatDetails(response.data);
     } catch (error) {
-      console.error("Error fetching chat history by date:", error);
+      console.error('Error fetching chat history by date:', error);
     }
   };
 
   const getDurationInMinutes = (duration) => {
-    if (!duration || duration === "Not Started") return 0;
+    if (!duration || duration === 'Not Started') return 0;
 
-    if (typeof duration === "string" && duration.includes(":")) {
-      const [minutes, seconds] = duration.split(":").map(Number);
+    if (typeof duration === 'string' && duration.includes(':')) {
+      const [minutes, seconds] = duration.split(':').map(Number);
       return minutes + (seconds > 0 ? 1 : 0);
     }
 
-    if (typeof duration === "number") {
+    if (typeof duration === 'number') {
       return duration;
     }
 
@@ -80,7 +83,10 @@ const AstrologerHistory = () => {
         <div className="py-6 px-4 md:px-6 xl:px-7.5 flex justify-between items-center">
           <div className="flex items-center gap-4">
             <div className="flex gap-3 items-center justify-center">
-              <label htmlFor="fromDate" className="text-md font-medium text-gray-600 dark:text-gray-300">
+              <label
+                htmlFor="fromDate"
+                className="text-md font-medium text-gray-600 dark:text-gray-300"
+              >
                 From
               </label>
               <input
@@ -93,7 +99,10 @@ const AstrologerHistory = () => {
             </div>
 
             <div className="flex gap-3 items-center justify-center">
-              <label htmlFor="toDate" className="text-md font-medium text-gray-600 dark:text-gray-300">
+              <label
+                htmlFor="toDate"
+                className="text-md font-medium text-gray-600 dark:text-gray-300"
+              >
                 To
               </label>
               <input
@@ -169,19 +178,27 @@ const AstrologerHistory = () => {
             </div>
 
             <div className="flex items-center justify-center col-span-1 sm:col-span-1">
-              <p className="text-sm text-black dark:text-white">{user.startedTime}</p>
+              <p className="text-sm text-black dark:text-white">
+                {user.startedTime}
+              </p>
             </div>
 
             <div className="flex items-center justify-center col-span-1 sm:col-span-1">
-              <p className="text-sm text-black dark:text-white">{user.endedTime}</p>
+              <p className="text-sm text-black dark:text-white">
+                {user.endedTime}
+              </p>
             </div>
 
             <div className="flex items-center justify-center col-span-1 sm:col-span-1">
-              <p className="text-sm text-black dark:text-white">{user.chatRoomId}</p>
+              <p className="text-sm text-black dark:text-white">
+                {user.chatRoomId}
+              </p>
             </div>
 
             <div className="flex items-center justify-center col-span-1 sm:col-span-1">
-              <p className="text-sm text-black dark:text-white">{user.totalAmount || 0}</p>
+              <p className="text-sm text-black dark:text-white">
+                {user.totalAmount || 0}
+              </p>
             </div>
 
             <div className="flex items-center justify-center col-span-1">
@@ -205,19 +222,25 @@ const AstrologerHistory = () => {
         onClose={() => setIsModalOpen(false)}
         chatData={selectedChat}
       />
-      
+
       {/* Pagination */}
       <ReactPaginate
-        previousLabel={"Previous"}
-        nextLabel={"Next"}
+        previousLabel={'Previous'}
+        nextLabel={'Next'}
         pageCount={pageCount}
         onPageChange={handlePageClick}
-        containerClassName={"flex flex-row space-x-2"} // Use flex-row for horizontal layout
-        pageClassName={"px-3 py-1 border border-stroke rounded-md text-black dark:text-white hover:bg-blue-300 dark:hover:bg-blue-400"} // Style for each page item
-        pageLinkClassName={"page-link"}
-        previousClassName={"px-3 py-1 border border-stroke rounded-md text-black dark:text-white hover:bg-blue-300 dark:hover:bg-blue-400"} // Style for previous button
-        nextClassName={"px-3 py-1 border border-stroke rounded-md text-black dark:text-white hover:bg-blue-300 dark:hover:bg-blue-400"} // Style for next button
-        activeClassName={"bg-blue-300 dark:bg-blue-400 text-white"} // Style for active page
+        containerClassName={'flex flex-row space-x-2'} // Use flex-row for horizontal layout
+        pageClassName={
+          'px-3 py-1 border border-stroke rounded-md text-black dark:text-white hover:bg-blue-300 dark:hover:bg-blue-400'
+        } // Style for each page item
+        pageLinkClassName={'page-link'}
+        previousClassName={
+          'px-3 py-1 border border-stroke rounded-md text-black dark:text-white hover:bg-blue-300 dark:hover:bg-blue-400'
+        } // Style for previous button
+        nextClassName={
+          'px-3 py-1 border border-stroke rounded-md text-black dark:text-white hover:bg-blue-300 dark:hover:bg-blue-400'
+        } // Style for next button
+        activeClassName={'bg-blue-300 dark:bg-blue-400 text-white'} // Style for active page
       />
     </>
   );
