@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 
 // Manually control environment
-const isProduction = false; // Set to true for production
+const isProduction = true; // Set to true for production
 
 // Define base URLs
 const baseURL = isProduction
