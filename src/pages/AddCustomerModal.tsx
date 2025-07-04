@@ -1,9 +1,15 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import axiosInstance from "../utils/axiosInstance";
 import toast from "react-hot-toast";
 
-const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
+const CustomerModal = ({
+    isOpen,
+    onClose,
+    setIsCustomerUpdated,
+    selectedCustomer,
+    setSelectedCustomer
+}) => {
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -17,9 +23,40 @@ const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
     });
     const [currentStep, setCurrentStep] = useState(1);
     const [uploading, setUploading] = useState(false);
+    const [isEditMode, setIsEditMode] = useState(false);
 
     const CLOUDINARY_CLOUD_NAME = "dlol2hjj8";
     const steps = 3;
+
+    useEffect(() => {
+        if (selectedCustomer) {
+            setIsEditMode(true);
+            setFormData({
+                name: selectedCustomer.name,
+                email: selectedCustomer.email,
+                phone: selectedCustomer.phone,
+                dateOfBirth: selectedCustomer.dateOfBirth,
+                timeOfBirth: selectedCustomer.timeOfBirth || "00:00 AM",
+                placeOfBirth: selectedCustomer.placeOfBirth,
+                gender: selectedCustomer.gender,
+                password: "", // Don't pre-fill password for security
+                photo: selectedCustomer.photo || null,
+            });
+        } else {
+            setIsEditMode(false);
+            setFormData({
+                name: "",
+                email: "",
+                phone: "",
+                dateOfBirth: "",
+                timeOfBirth: "00:00 AM",
+                placeOfBirth: "",
+                gender: "",
+                password: "",
+                photo: null,
+            });
+        }
+    }, [selectedCustomer]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -43,6 +80,7 @@ const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
             setFormData(prev => ({ ...prev, photo: response.data.secure_url }));
         } catch (error) {
             console.error("Error uploading photo:", error);
+            toast.error("Failed to upload photo");
         } finally {
             setUploading(false);
         }
@@ -56,7 +94,7 @@ const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
             return formData.dateOfBirth && formData.placeOfBirth;
         }
         if (currentStep === 3) {
-            return formData.gender && formData.password;
+            return formData.gender && (!isEditMode ? formData.password : true);
         }
         return true;
     };
@@ -76,39 +114,72 @@ const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const isFormValid = Object.values(formData).every(value => value !== "" && value !== null);
-
-        if (!isFormValid) {
-            setIsAddCustomerAdded({ status: true, message: "Form Validation Failed" });
-            return;
-        }
-
         try {
-            const response = await axiosInstance.post("/user/signup", formData);
-            if (response.data.status === 200) {
-                toast.success("User Registered Successfully")
-                // setIsAddCustomerAdded({ status: false, message: response.data.message });
+            let response;
+            if (isEditMode) {
+                // Exclude phone from payload in edit mode
+                const { phone, ...updateData } = formData;
+                response = await axiosInstance.patch(
+                    `/user/update/${selectedCustomer._id}`,
+                    updateData
+                );
+                toast.success("Customer updated successfully");
             } else {
-                setIsAddCustomerAdded({ status: true, message: response.data.message });
+                // Create new customer
+                response = await axiosInstance.post("/user/signup", formData);
+                toast.success("Customer created successfully");
             }
 
-            setFormData({
-                name: "",
-                email: "",
-                phone: "",
-                dateOfBirth: "",
-                timeOfBirth: "00:00 AM",
-                placeOfBirth: "",
-                gender: "",
-                password: "",
-                photo: null,
-            });
-            setCurrentStep(1);
-            onClose();
+            if (response.data.statusCode === 200) {
+                setIsCustomerUpdated(true);
+                resetForm();
+                onClose();
+            } else {
+                toast.error(response.data.message || "Something went wrong");
+            }
         } catch (error) {
             toast.error(error.response?.data?.message || "Something went wrong.");
-            console.error("Submission Error:", error.response?.data?.message);
+            console.error("Submission Error:", error);
         }
+    };
+
+    const handleDelete = async () => {
+        if (!selectedCustomer) return;
+
+        // Show confirmation alert
+        const confirmed = window.confirm("Are you sure you want to delete this customer? This action cannot be undone.");
+        if (!confirmed) return;
+
+        try {
+            const response = await axiosInstance.delete(`/user/delete/${selectedCustomer._id}`);
+            if (response.data.statusCode === 200) {
+                toast.success("Customer deleted successfully");
+                setIsCustomerUpdated(true);
+                resetForm();
+                onClose();
+            } else {
+                toast.error(response.data.message || "Failed to delete customer");
+            }
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Failed to delete customer");
+            console.error("Delete Error:", error);
+        }
+    };
+
+    const resetForm = () => {
+        setFormData({
+            name: "",
+            email: "",
+            phone: "",
+            dateOfBirth: "",
+            timeOfBirth: "00:00 AM",
+            placeOfBirth: "",
+            gender: "",
+            password: "",
+            photo: null,
+        });
+        setCurrentStep(1);
+        setSelectedCustomer(null);
     };
 
     if (!isOpen) return null;
@@ -116,7 +187,9 @@ const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
             <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md h-auto">
-                <h2 className="text-xl font-bold mb-4">Add Customer</h2>
+                <h2 className="text-xl font-bold mb-4">
+                    {isEditMode ? "Edit Customer" : "Add Customer"}
+                </h2>
                 <form onSubmit={handleSubmit}>
                     {currentStep === 1 && (
                         <>
@@ -147,10 +220,11 @@ const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
                                 <input
                                     type="tel"
                                     name="phone"
-                                    className="w-full border rounded px-3 py-2"
+                                    className={`w-full border rounded px-3 py-2 ${isEditMode ? 'bg-gray-100' : ''}`}
                                     value={formData.phone}
                                     onChange={handleInputChange}
                                     required
+                                    readOnly={isEditMode}  // This makes it non-editable
                                 />
                             </div>
                         </>
@@ -209,7 +283,7 @@ const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
                                 </select>
                             </div>
                             <div className="mb-4">
-                                <label className="block mb-1">Photo <span className="text-red-500">*</span></label>
+                                <label className="block mb-1">Photo</label>
                                 <input
                                     type="file"
                                     accept="image/*"
@@ -229,21 +303,23 @@ const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
                                     />
                                 </div>
                             )}
-                            <div className="mb-4">
-                                <label className="block mb-1">Password <span className="text-red-500">*</span></label>
-                                <input
-                                    type="password"
-                                    name="password"
-                                    className="w-full border rounded px-3 py-2"
-                                    value={formData.password}
-                                    onChange={handleInputChange}
-                                    required
-                                />
-                            </div>
+                            {!isEditMode && (
+                                <div className="mb-4">
+                                    <label className="block mb-1">Password <span className="text-red-500">*</span></label>
+                                    <input
+                                        type="password"
+                                        name="password"
+                                        className="w-full border rounded px-3 py-2"
+                                        value={formData.password}
+                                        onChange={handleInputChange}
+                                        required={!isEditMode}
+                                    />
+                                </div>
+                            )}
                         </>
                     )}
                     <div className="flex justify-between items-center mt-4">
-                        {currentStep > 1 && (
+                        {currentStep > 1 ? (
                             <button
                                 type="button"
                                 className="bg-gray-500 text-white px-4 py-2 rounded"
@@ -251,46 +327,46 @@ const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
                             >
                                 Back
                             </button>
-                        )}
-                        {currentStep < steps && (
-                            <>
-                                <button
-                                    type="button"
-                                    className="bg-blue-500 text-white px-4 py-2 rounded"
-                                    onClick={() => {
-                                        setFormData({
-                                            name: "",
-                                            email: "",
-                                            phone: "",
-                                            dateOfBirth: "",
-                                            timeOfBirth: "00:00 AM",
-                                            placeOfBirth: "",
-                                            gender: "",
-                                            password: "",
-                                            photo: null,
-                                        });
-                                        onClose();
-                                    }}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="button"
-                                    className="bg-blue-600 text-white px-4 py-2 rounded"
-                                    onClick={handleNext}
-                                >
-                                    Next
-                                </button>
-                            </>
-                        )}
-                        {currentStep === steps && (
+                        ) : (
                             <button
-                                type="submit"
-                                className="bg-green-600 text-white px-4 py-2 rounded"
-                                disabled={uploading}
+                                type="button"
+                                className="bg-gray-500 text-white px-4 py-2 rounded"
+                                onClick={() => {
+                                    resetForm();
+                                    onClose();
+                                }}
                             >
-                                Submit
+                                Cancel
                             </button>
+                        )}
+
+                        {currentStep < steps ? (
+                            <button
+                                type="button"
+                                className="bg-blue-600 text-white px-4 py-2 rounded"
+                                onClick={handleNext}
+                            >
+                                Next
+                            </button>
+                        ) : (
+                            <div className="flex space-x-2">
+                                {isEditMode && (
+                                    <button
+                                        type="button"
+                                        className="bg-red-600 text-white px-4 py-2 rounded"
+                                        onClick={handleDelete}
+                                    >
+                                        Delete
+                                    </button>
+                                )}
+                                <button
+                                    type="submit"
+                                    className="bg-green-600 text-white px-4 py-2 rounded"
+                                    disabled={uploading}
+                                >
+                                    {isEditMode ? "Update" : "Submit"}
+                                </button>
+                            </div>
                         )}
                     </div>
                 </form>
@@ -299,4 +375,4 @@ const AddCustomerModal = ({ isOpen, onClose, setIsAddCustomerAdded }) => {
     );
 };
 
-export default AddCustomerModal;
+export default CustomerModal;

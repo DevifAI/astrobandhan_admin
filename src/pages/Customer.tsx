@@ -9,37 +9,35 @@ import RechargeWalletModal from "../modals/RechargeWallet";
 import axiosInstance from "../utils/axiosInstance";
 import toast, { Toaster } from 'react-hot-toast';
 import ReactPaginate from 'react-paginate';
-import AddCustomerModal from "./AddCustomerModal";
+import CustomerModal from "./AddCustomerModal";
 
 
 const Customer = () => {
   const [isRechargeModalOpen, setIsRechargeModalOpen] = useState(false);
   const [isRechargeDone, setIsRechargeDone] = useState(false);
-  const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false);
-  const [isAddCustomerAdded, setIsAddCustomerAdded] = useState({ status: false, message: "" });
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [isCustomerUpdated, setIsCustomerUpdated] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerType | null>(null);
 
   const [users, setUsers] = useState<CustomerType[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");  // Added search state
-  const [selectedUser, setSelectedUser] = useState<CustomerType | null>(null); // Modal state for selected user
-
-  // Pagination States
+  const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(0);
-  const itemsPerPage = 10; // You can adjust the number of users per page.
+  const itemsPerPage = 10;
 
-  // Fetch users data on component mount
+  // Fetch users data
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const response = await axiosInstance.post("/admin/get/users");
-        // console.log(response.data);
-        setUsers(response.data.data); // Set the fetched users
+        setUsers(response.data.data);
       } catch (error) {
         console.error("Error fetching users:", error);
+        toast.error("Failed to load customers");
       }
     };
 
     fetchUsers();
-  }, [isRechargeModalOpen, isAddCustomerModalOpen]); // Dependency on `isRechargeModalOpen`
+  }, [isRechargeModalOpen, isCustomerModalOpen, isCustomerUpdated]);
 
   // Filter users by name based on the search term
   const filteredUsers = users.filter((user) =>
@@ -55,33 +53,25 @@ const Customer = () => {
     setCurrentPage(selectedPage.selected);
   };
 
-  // Handle click on eye button to open the user details modal
-  const handleViewUserDetails = (user: CustomerType) => {
-    setSelectedUser(user); // Set the selected user for modal display
+  // Handle edit customer
+  const handleEditCustomer = (customer: CustomerType) => {
+    setSelectedCustomer(customer);
+    setIsCustomerModalOpen(true);
   };
 
-  // Close the user details modal
+  // Close modal and reset
   const handleCloseModal = () => {
-    setSelectedUser(null);
+    setIsCustomerModalOpen(false);
+    setSelectedCustomer(null);
+    setIsCustomerUpdated(false);
   };
-
 
   useEffect(() => {
     if (isRechargeDone) {
       toast.success("Recharge Done");
+      setIsRechargeDone(false);
     }
-    // console.log({isAddCustomerAdded})
-    if (isAddCustomerAdded.status && !isAddCustomerAdded.message !== "") {
-      // console.log({isAddCustomerAdded})
-      // toast.error(isAddCustomerAdded.message);
-    }
-    // if (!isAddCustomerAdded.status && !isAddCustomerAdded.message.trim() !== "") {
-    //   console.log({isAddCustomerAdded})
-    //   toast.success(isAddCustomerAdded.message);
-    // }
-    setIsAddCustomerAdded({ status: false, message: "" })
-    setIsRechargeDone(false);
-  }, [isRechargeDone, isAddCustomerModalOpen]);
+  }, [isRechargeDone]);
 
   return (
     <>
@@ -118,7 +108,7 @@ const Customer = () => {
                   placeholder="Type to search..."
                   className="w-full bg-transparent pl-9 pr-4 text-black focus:outline-none dark:text-white xl:w-125"
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)} // Update search term
+                  onChange={(e) => setSearchTerm(e.target.value)}
                 />
               </div>
             </form>
@@ -133,7 +123,7 @@ const Customer = () => {
             </button>
 
             <button
-              onClick={() => setIsAddCustomerModalOpen(true)}
+              onClick={() => setIsCustomerModalOpen(true)}
               className="rounded-md bg-blue-300 px-2 py-1 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-opacity-75 dark:bg-blue-400 dark:hover:bg-blue-500 dark:focus:ring-blue-300"
             >
               Add Customer
@@ -165,12 +155,34 @@ const Customer = () => {
         {/* Table Body */}
         {currentUsers.map((user, key) => (
           <div
-            className="grid grid-cols-2 sm:grid-cols-6 md:grid-cols-8 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5"
+            className="grid grid-cols-2 sm:grid-cols-6 md:grid-cols-8 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer"
             key={key}
+            onClick={() => handleEditCustomer(user)}
           >
             <div className="flex items-center col-span-2 sm:col-span-2">
               <div className="flex gap-4 justify-center items-center">
-                <img src={user.photo} alt="User Profile" className="h-12.5 w-12.5 rounded-full" />
+                {user.photo ? (
+                  <img
+                    src={user.photo}
+                    alt="User Profile"
+                    className="h-12.5 w-12.5 rounded-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = "none";
+                      (e.target as HTMLImageElement).nextElementSibling!.style.display = "flex";
+                    }}
+                  />
+                ) : (
+                  <span className="h-12.5 w-12.5 flex items-center justify-center rounded-full bg-gray-200 text-gray-500 font-bold text-lg">
+                    NA
+                  </span>
+                )}
+                {/* This hidden span is only for fallback if image fails to load */}
+                <span
+                  style={{ display: "none" }}
+                  className="h-12.5 w-12.5 flex items-center justify-center rounded-full bg-gray-200 text-gray-500 font-bold text-lg"
+                >
+                  NA
+                </span>
                 <p className="text-sm text-black dark:text-white">{user.name}</p>
               </div>
             </div>
@@ -196,13 +208,13 @@ const Customer = () => {
           </div>
         ))}
 
-        {/* Pagination */}
-        <AddCustomerModal
-          isOpen={isAddCustomerModalOpen}
-          onClose={() => setIsAddCustomerModalOpen(false)}
-          setIsAddCustomerAdded={setIsAddCustomerAdded}
+        <CustomerModal
+          isOpen={isCustomerModalOpen}
+          onClose={handleCloseModal}
+          setIsCustomerUpdated={setIsCustomerUpdated}
+          selectedCustomer={selectedCustomer}
+          setSelectedCustomer={setSelectedCustomer}
         />
-
 
         <RechargeWalletModal
           isOpen={isRechargeModalOpen}
@@ -210,7 +222,6 @@ const Customer = () => {
           onClose={() => setIsRechargeModalOpen(false)}
           setIsRechargeDone={setIsRechargeDone}
         />
-
       </div>
 
       <div className="flex justify-center py-4">
@@ -219,12 +230,12 @@ const Customer = () => {
           nextLabel={"Next"}
           pageCount={Math.ceil(filteredUsers.length / itemsPerPage)}
           onPageChange={handlePageClick}
-          containerClassName={"flex flex-row space-x-2"} // Use flex-row for horizontal layout
-          pageClassName={"px-3 py-1 border border-stroke rounded-md text-black dark:text-white hover:bg-blue-300 dark:hover:bg-blue-400"} // Style for each page item
+          containerClassName={"flex flex-row space-x-2"}
+          pageClassName={"px-3 py-1 border border-stroke rounded-md text-black dark:text-white hover:bg-blue-300 dark:hover:bg-blue-400"}
           pageLinkClassName={"page-link"}
-          previousClassName={"px-3 py-1 border border-stroke rounded-md text-black dark:text-white hover:bg-blue-300 dark:hover:bg-blue-400"} // Style for previous button
-          nextClassName={"px-3 py-1 border border-stroke rounded-md text-black dark:text-white hover:bg-blue-300 dark:hover:bg-blue-400"} // Style for next button
-          activeClassName={"bg-blue-300 dark:bg-blue-400 text-white"} // Style for active page
+          previousClassName={"px-3 py-1 border border-stroke rounded-md text-black dark:text-white hover:bg-blue-300 dark:hover:bg-blue-400"}
+          nextClassName={"px-3 py-1 border border-stroke rounded-md text-black dark:text-white hover:bg-blue-300 dark:hover:bg-blue-400"}
+          activeClassName={"bg-blue-300 dark:bg-blue-400 text-white"}
         />
       </div>
       <Toaster />

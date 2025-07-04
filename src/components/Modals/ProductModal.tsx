@@ -7,11 +7,12 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const CLOUDINARY_CLOUD_NAME = 'dlol2hjj8';
+const DEFAULT_IMAGE = 'https://via.placeholder.com/150?text=No+Image';
 
 interface ProductModalProps {
   product: Product | null;
   onClose: () => void;
-  onProductCreated: (product: Product) => void;
+  onProductCreated: () => void;
 }
 
 const ProductModal: React.FC<ProductModalProps> = ({
@@ -43,15 +44,42 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [image, setImage] = useState<string>('');
+  const [imagePreview, setImagePreview] = useState<string>(DEFAULT_IMAGE);
   const [newContainsItem, setNewContainsItem] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (product) {
-      setFormData(product);
-      if (product.image) setImage(product.image);
+      setFormData({
+        ...product,
+        in_stock: product.in_stock !== false // Ensure boolean value
+      });
+      setImagePreview(product.image || DEFAULT_IMAGE);
+    } else {
+      // Reset form for new product
+      setFormData({
+        productName: '',
+        productDescription: '',
+        category: {
+          _id: '',
+          category_name: '',
+          createdAt: '',
+          updatedAt: '',
+          __v: 0,
+        },
+        originalPrice: 0,
+        displayPrice: 0,
+        brand: '',
+        weight: '',
+        material: '',
+        in_stock: true,
+        contains: [],
+        image: '',
+        rating: 0,
+        isTrending: false,
+      });
+      setImagePreview(DEFAULT_IMAGE);
     }
   }, [product]);
 
@@ -117,7 +145,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
-          setImage(event.target.result as string);
+          setImagePreview(event.target.result as string);
         }
       };
       reader.readAsDataURL(file);
@@ -134,13 +162,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
           headers: {
             'Content-Type': 'multipart/form-data',
           },
-          onUploadProgress: (progressEvent) => {
-            // Optional: Add progress tracking
-            const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) / (progressEvent.total || 1),
-            );
-            console.log(`Upload progress: ${percentCompleted}%`);
-          },
         },
       );
 
@@ -150,13 +171,13 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
       setFormData((prev) => ({
         ...prev,
-        image: cloudinaryResponse.data.secure_url, // Fixed: was using imageUrl but formData uses image
+        image: cloudinaryResponse.data.secure_url,
       }));
     } catch (error) {
       console.error('Image upload error:', error);
       toast.error('Failed to upload image. Please try again.');
       // Reset image state on error
-      setImage('');
+      setImagePreview(DEFAULT_IMAGE);
       setImageFile(null);
     } finally {
       setUploading(false);
@@ -199,23 +220,21 @@ const ProductModal: React.FC<ProductModalProps> = ({
         image: formData.image,
       };
 
-      console.log('Submitting product data:', payload);
-
       const url = product
         ? `/product/update/${product._id}`
         : '/product/createProduct';
 
       const method = product ? axiosInstance.put : axiosInstance.post;
 
-      const res = await method(url, payload);
+      await method(url, payload);
 
-      onProductCreated(res.data?.data || res.data);
-      onClose();
       toast.success(
         product
           ? 'Product updated successfully'
           : 'Product created successfully',
       );
+      onProductCreated();
+      onClose();
     } catch (error: any) {
       const message =
         error?.response?.data?.message || error?.message || 'Unknown error';
@@ -246,19 +265,19 @@ const ProductModal: React.FC<ProductModalProps> = ({
           className="flex-1 overflow-y-auto p-4 w-full h-[90%] flex flex-col"
         >
           {/* Image Upload */}
-          <div className="p-6">
+          <div className="px-6 py-4">
             <div className="border-2 border-dashed p-4 rounded-lg text-center">
-              {image ? (
-                <div className="relative">
-                  <img
-                    src={image}
-                    alt="preview"
-                    className="max-h-64 mx-auto rounded-lg"
-                  />
+              <div className="relative">
+                <img
+                  src={imagePreview}
+                  alt="preview"
+                  className="max-h-64 mx-auto rounded-lg object-cover"
+                />
+                {imagePreview !== DEFAULT_IMAGE && (
                   <button
                     type="button"
                     onClick={() => {
-                      setImage('');
+                      setImagePreview(DEFAULT_IMAGE);
                       setImageFile(null);
                       setFormData((prev) => ({ ...prev, image: '' }));
                     }}
@@ -266,67 +285,81 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   >
                     ×
                   </button>
-                </div>
-              ) : (
-                <>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className="hidden"
-                    id="imgUpload"
-                    disabled={uploading}
-                  />
-                  <label
-                    htmlFor="imgUpload"
-                    className={`cursor-pointer ${
-                      uploading
-                        ? 'text-gray-400'
-                        : 'text-blue-600 dark:text-blue-300'
-                    }`}
-                  >
-                    {uploading ? 'Uploading...' : 'Upload Product Image'}
-                  </label>
-                </>
-              )}
+                )}
+              </div>
+              <div className="mt-4">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  className="hidden"
+                  id="imgUpload"
+                  disabled={uploading}
+                />
+                <label
+                  htmlFor="imgUpload"
+                  className={`cursor-pointer inline-block px-4 py-2 rounded-lg ${
+                    uploading
+                      ? 'bg-gray-400 text-white'
+                      : 'bg-blue-500 text-white hover:bg-blue-600'
+                  }`}
+                >
+                  {uploading ? 'Uploading...' : 'Change Product Image'}
+                </label>
+              </div>
             </div>
           </div>
 
           {/* Form Fields */}
           <div className="grid md:grid-cols-2 gap-6 px-6">
             <div className="space-y-4">
-              <input
-                type="text"
-                name="productName"
-                placeholder="Product Name"
-                value={formData.productName || ''}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              />
-              <textarea
-                name="productDescription"
-                placeholder="Description"
-                value={formData.productDescription || ''}
-                onChange={handleChange}
-                rows={4}
-                required
-                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              />
-              <select
-                name="category"
-                value={(formData.category as Category)?._id || ''}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              >
-                <option value="">Select Category</option>
-                {categories.map((cat) => (
-                  <option key={cat._id} value={cat._id}>
-                    {cat.category_name}
-                  </option>
-                ))}
-              </select>
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-white">
+                  Product Name*
+                </label>
+                <input
+                  type="text"
+                  name="productName"
+                  placeholder="Product Name"
+                  value={formData.productName || ''}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-white">
+                  Description*
+                </label>
+                <textarea
+                  name="productDescription"
+                  placeholder="Description"
+                  value={formData.productDescription || ''}
+                  onChange={handleChange}
+                  rows={4}
+                  required
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-white">
+                  Category*
+                </label>
+                <select
+                  name="category"
+                  value={(formData.category as Category)?._id || ''}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                >
+                  <option value="">Select Category</option>
+                  {categories.map((cat) => (
+                    <option key={cat._id} value={cat._id}>
+                      {cat.category_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div className="flex items-center">
                 <input
                   type="checkbox"
@@ -348,52 +381,77 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </div>
 
             <div className="space-y-4">
-              <input
-                type="number"
-                name="originalPrice"
-                placeholder="Original Price"
-                value={formData.originalPrice || ''}
-                onChange={handleChange}
-                required
-                min="0"
-                step="0.01"
-                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              />
-              <input
-                type="number"
-                name="displayPrice"
-                placeholder="Display Price"
-                value={formData.displayPrice || ''}
-                onChange={handleChange}
-                required
-                min="0"
-                step="0.01"
-                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              />
-              <input
-                type="text"
-                name="brand"
-                placeholder="Brand"
-                value={formData.brand || ''}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              />
-              <input
-                type="text"
-                name="weight"
-                placeholder="Weight"
-                value={formData.weight || ''}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              />
-              <input
-                type="text"
-                name="material"
-                placeholder="Material"
-                value={formData.material || ''}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
-              />
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-white">
+                  Original Price*
+                </label>
+                <input
+                  type="number"
+                  name="originalPrice"
+                  placeholder="Original Price"
+                  value={formData.originalPrice || ''}
+                  onChange={handleChange}
+                  required
+                  min="0"
+                  step="0.01"
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-white">
+                  Display Price*
+                </label>
+                <input
+                  type="number"
+                  name="displayPrice"
+                  placeholder="Display Price"
+                  value={formData.displayPrice || ''}
+                  onChange={handleChange}
+                  required
+                  min="0"
+                  step="0.01"
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-white">
+                  Brand
+                </label>
+                <input
+                  type="text"
+                  name="brand"
+                  placeholder="Brand"
+                  value={formData.brand || ''}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-white">
+                  Weight
+                </label>
+                <input
+                  type="text"
+                  name="weight"
+                  placeholder="Weight"
+                  value={formData.weight || ''}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1 dark:text-white">
+                  Material
+                </label>
+                <input
+                  type="text"
+                  name="material"
+                  placeholder="Material"
+                  value={formData.material || ''}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600"
+                />
+              </div>
             </div>
           </div>
 

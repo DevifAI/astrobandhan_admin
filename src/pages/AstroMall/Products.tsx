@@ -154,60 +154,87 @@ const Products: React.FC = () => {
               <p>Actions</p>
             </div>
 
-            {paginatedProducts.map((product) => (
-              <div
-                className="grid grid-cols-7 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5 text-center"
-                key={product._id}
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <img
-                    src={product.image}
-                    alt={product.productName}
-                    className="h-10 w-10 rounded-full"
-                  />
-                  <p>{product.productName}</p>
+            {paginatedProducts.length > 0 ? (
+              paginatedProducts.map((product) => (
+                <div
+                  className="grid grid-cols-7 border-t border-stroke py-4.5 px-4 dark:border-strokedark md:px-6 2xl:px-7.5 text-center"
+                  key={product._id}
+                >
+                  <div className="flex items-center justify-center gap-2">
+                    {product.image ? (
+                      <img
+                        src={product.image}
+                        alt={product.productName}
+                        className="h-10 w-10 rounded-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                          ((e.target as HTMLImageElement).nextElementSibling as HTMLElement)!.style.display = "flex";
+                        }}
+                      />
+                    ) : (
+                      <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-500 font-bold">
+                        NA
+                      </div>
+                    )}
+                    {/* Hidden fallback for image load error */}
+                    <div
+                      style={{ display: "none" }}
+                      className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-xs text-gray-500 font-bold"
+                    >
+                      NA
+                    </div>
+                    <p className="truncate max-w-[120px]">{product.productName}</p>
+                  </div>
+                  <p className="col-span-2 truncate max-w-[200px] mx-auto">
+                    {product.category?.category_name || 'Uncategorized'}
+                  </p>
+                  <p>${product.displayPrice?.toFixed(2)}</p>
+                  <p>${product.originalPrice?.toFixed(2)}</p>
+                  <p className={`text-sm ${product.in_stock ? 'text-green-600' : 'text-red-600'}`}>
+                    {product.in_stock ? 'Available' : 'Out of Stock'}
+                  </p>
+                  <div className="flex justify-center gap-3">
+                    <button
+                      onClick={() => {
+                        setEditProduct(product);
+                        setShowModal(true);
+                      }}
+                      className="text-blue-500 hover:text-blue-700"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteProduct(product._id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-                <p className="col-span-2">{product.category?.category_name}</p>
-                <p>{product.displayPrice}</p>
-                <p>{product.originalPrice}</p>
-                <p className={`text-sm ${product.in_stock ? 'text-green-600' : 'text-red-600'}`}>
-                  {product.in_stock ? 'Available' : 'Not Available'}
-                </p>
-                <div className="flex justify-center gap-3">
-                  <button
-                    onClick={() => {
-                      setEditProduct(product);
-                      setShowModal(true);
-                    }}
-                    className="text-blue-500 hover:text-blue-700"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDeleteProduct(product._id)}
-                    className="text-red-500 hover:text-red-700"
-                  >
-                    Delete
-                  </button>
-                </div>
+              ))
+            ) : (
+              <div className="py-8 text-center text-gray-500">
+                No products found matching your criteria
               </div>
-            ))}
+            )}
 
-            <div className="flex justify-center py-6">
-              <ReactPaginate
-                previousLabel={'Previous'}
-                nextLabel={'Next'}
-                pageCount={totalPages}
-                onPageChange={(event) => setCurrentPage(event.selected)}
-                forcePage={currentPage}
-                containerClassName="flex space-x-2"
-                pageClassName="px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"
-                activeClassName="bg-blue-300 dark:bg-blue-400 text-white"
-                previousClassName="px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"
-                nextClassName="px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"
-                disabledClassName="opacity-50 cursor-not-allowed"
-              />
-            </div>
+            {totalPages > 1 && (
+              <div className="flex justify-center py-6">
+                <ReactPaginate
+                  previousLabel={'Previous'}
+                  nextLabel={'Next'}
+                  pageCount={totalPages}
+                  onPageChange={(event) => setCurrentPage(event.selected)}
+                  forcePage={currentPage}
+                  containerClassName="flex space-x-2"
+                  pageClassName="px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"
+                  activeClassName="bg-blue-300 dark:bg-blue-400 text-white"
+                  previousClassName="px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"
+                  nextClassName="px-3 py-1 border border-stroke rounded-md hover:bg-blue-300 dark:hover:bg-blue-400"
+                  disabledClassName="opacity-50 cursor-not-allowed"
+                />
+              </div>
+            )}
           </>
         )}
 
