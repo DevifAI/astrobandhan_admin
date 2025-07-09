@@ -6,7 +6,7 @@ import axiosInstance from '../../utils/axiosInstance.ts';
 import axios from 'axios';
 import ReactPaginate from 'react-paginate';
 import toast, { Toaster } from 'react-hot-toast';
-import { Category } from '../../types/categoryTypes.ts';
+
 
 const Products: React.FC = () => {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
